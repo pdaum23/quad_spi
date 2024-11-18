@@ -145,6 +145,7 @@ W25Q_STATE W25Q_SwReset(bool force);	///< Software reset
 W25Q_STATE CSP_QSPI_EnableMemoryMappedMode(void);
 uint8_t QSPI_AutoPollingMemReady(void);
 uint8_t QSPI_ResetChip(void);
+uint8_t QSPI_WriteEnable(void);
 
 
 /**

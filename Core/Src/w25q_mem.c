@@ -75,6 +75,7 @@ W25Q_STATE W25Q_Init(void) {
 
 	// read id
 	u8_t id = 0;
+
 	state = W25Q_ReadID(&id);
 	if (state != W25Q_OK)
 		return state;
@@ -120,7 +121,16 @@ W25Q_STATE W25Q_Init(void) {
 		if (state != W25Q_OK)
 			return state;
 	}
+	/*
+  state = W25Q_ReadStatusReg(&bufReg, 2);
+  if (state != W25Q_OK)
+    return state;
+	bufReg &= 0x9f; // DRV1:2 bit
 
+  state = W25Q_WriteStatusReg(bufReg, 2);
+  if (state != W25Q_OK)
+    return state;
+  */
 	// make another read
 	state = W25Q_ReadStatusStruct(NULL);
 	// return communication status
@@ -1521,46 +1531,35 @@ u32_t page_to_addr(u32_t pageNum, u8_t pageShift) {
 
 W25Q_STATE CSP_QSPI_EnableMemoryMappedMode(void) {
 
-  QSPI_CommandTypeDef sCommand;
-  QSPI_MemoryMappedTypeDef sMemMappedCfg;
+  QSPI_CommandTypeDef sCommand = {};
+  QSPI_MemoryMappedTypeDef sMemMappedCfg ={};
 
   /* Enable Memory-Mapped mode-------------------------------------------------- */
 
   sCommand.InstructionMode = QSPI_INSTRUCTION_1_LINE;
-#if MEM_FLASH_SIZE > 128U
-  sCommand.Instruction = W25Q_FAST_READ_QUAD_OUT_4B;
   sCommand.AddressSize = QSPI_ADDRESS_32_BITS;
-#else
-  sCommand.Instruction = W25Q_FAST_READ_QUAD_OUT;
-  sCommand.AddressSize = QSPI_ADDRESS_24_BITS;
-#endif
-  sCommand.AddressMode = QSPI_ADDRESS_4_LINES;
-  sCommand.Address = 0;
-  sCommand.AlternateByteMode = QSPI_ALTERNATE_BYTES_4_LINES;
-  sCommand.AlternateBytes = 0xFF;
-  sCommand.AlternateBytesSize = 1;
+  sCommand.AlternateByteMode = QSPI_ALTERNATE_BYTES_1_LINE ;
   sCommand.DdrMode = QSPI_DDR_MODE_DISABLE;
   sCommand.DdrHoldHalfCycle = QSPI_DDR_HHC_ANALOG_DELAY;
   sCommand.SIOOMode = QSPI_SIOO_INST_EVERY_CMD;
+  sCommand.AddressMode = QSPI_ADDRESS_1_LINE;
   sCommand.DataMode = QSPI_DATA_4_LINES;
   sCommand.NbData = 0;
-  sCommand.DummyCycles = 4;
-
+  sCommand.Address = 0;
+  sCommand.Instruction = W25Q_FAST_READ_QUAD_OUT_4B;
+  sCommand.DummyCycles = 0;
   sMemMappedCfg.TimeOutActivation = QSPI_TIMEOUT_COUNTER_DISABLE;
-  sMemMappedCfg.TimeOutPeriod = 0;
 
   if (HAL_QSPI_MemoryMapped(&hqspi, &sCommand, &sMemMappedCfg) != HAL_OK) {
     return HAL_ERROR;
   }
-  HAL_Delay(100);
   return HAL_OK;
 }
 
 uint8_t QSPI_AutoPollingMemReady(void) {
 
-  QSPI_CommandTypeDef sCommand = { 0 };
-  QSPI_AutoPollingTypeDef sConfig = { 0 };
-  HAL_StatusTypeDef ret;
+  QSPI_CommandTypeDef sCommand = {};
+   QSPI_AutoPollingTypeDef sConfig;
 
   /* Configure automatic polling mode to wait for memory ready ------ */
   sCommand.InstructionMode = QSPI_INSTRUCTION_1_LINE;
@@ -1575,14 +1574,16 @@ uint8_t QSPI_AutoPollingMemReady(void) {
 
   sConfig.Match = 0x00;
   sConfig.Mask = 0x01;
-  sConfig.MatchMode = QSPI_MATCH_MODE_AND;
+  sConfig.MatchMode = QSPI_MATCH_MODE_OR;
   sConfig.StatusBytesSize = 1;
   sConfig.Interval = 0x10;
   sConfig.AutomaticStop = QSPI_AUTOMATIC_STOP_ENABLE;
-  if ((ret = HAL_QSPI_AutoPolling(&hqspi, &sCommand, &sConfig,
-      HAL_MAX_DELAY)) != HAL_OK) {
-    return ret;
+
+  if (HAL_QSPI_AutoPolling(&hqspi, &sCommand, &sConfig,
+  HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) {
+    return HAL_ERROR;
   }
+
   return HAL_OK;
 }
 
@@ -1630,7 +1631,7 @@ uint8_t QSPI_ResetChip(void) {
   return HAL_OK;
 }
 
-static uint8_t QSPI_WriteEnable(void) {
+uint8_t QSPI_WriteEnable(void) {
   QSPI_CommandTypeDef sCommand = { 0 };
   QSPI_AutoPollingTypeDef sConfig = { 0 };
   HAL_StatusTypeDef ret;
@@ -1668,5 +1669,3 @@ static uint8_t QSPI_WriteEnable(void) {
   }
   return HAL_OK;
 }
-
-///@}

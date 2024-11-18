@@ -146,9 +146,13 @@ int main(void)
 
   memset(testBuf, 0x55, 256);
   W25Q_ReadRaw(testBuf, 256, 0);
+  QSPI_AutoPollingMemReady();
+  //QSPI_WriteEnable();
   CSP_QSPI_EnableMemoryMappedMode();
   memset(testBuf, 0x55, 256);
   memcpy(testBuf, (uint8_t *) 0x90000000, 256);
+  QSPI_ResetChip();
+  W25Q_Init();
   memset(testBuf, 0x55, 256);
   W25Q_ReadRaw(testBuf, 256, 0);
 
