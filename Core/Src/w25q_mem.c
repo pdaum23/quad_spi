@@ -1556,4 +1556,117 @@ W25Q_STATE CSP_QSPI_EnableMemoryMappedMode(void) {
   return HAL_OK;
 }
 
+uint8_t QSPI_AutoPollingMemReady(void) {
+
+  QSPI_CommandTypeDef sCommand = { 0 };
+  QSPI_AutoPollingTypeDef sConfig = { 0 };
+  HAL_StatusTypeDef ret;
+
+  /* Configure automatic polling mode to wait for memory ready ------ */
+  sCommand.InstructionMode = QSPI_INSTRUCTION_1_LINE;
+  sCommand.Instruction = W25Q_READ_SR1;
+  sCommand.AddressMode = QSPI_ADDRESS_NONE;
+  sCommand.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+  sCommand.DataMode = QSPI_DATA_1_LINE;
+  sCommand.DummyCycles = 0;
+  sCommand.DdrMode = QSPI_DDR_MODE_DISABLE;
+  sCommand.DdrHoldHalfCycle = QSPI_DDR_HHC_ANALOG_DELAY;
+  sCommand.SIOOMode = QSPI_SIOO_INST_EVERY_CMD;
+
+  sConfig.Match = 0x00;
+  sConfig.Mask = 0x01;
+  sConfig.MatchMode = QSPI_MATCH_MODE_AND;
+  sConfig.StatusBytesSize = 1;
+  sConfig.Interval = 0x10;
+  sConfig.AutomaticStop = QSPI_AUTOMATIC_STOP_ENABLE;
+  if ((ret = HAL_QSPI_AutoPolling(&hqspi, &sCommand, &sConfig,
+      HAL_MAX_DELAY)) != HAL_OK) {
+    return ret;
+  }
+  return HAL_OK;
+}
+
+uint8_t QSPI_ResetChip(void) {
+  QSPI_CommandTypeDef sCommand = { 0 };
+  uint32_t temp = 0;
+  HAL_StatusTypeDef ret;
+
+  /* Enable Reset --------------------------- */
+  sCommand.InstructionMode = QSPI_INSTRUCTION_1_LINE;
+  sCommand.Instruction = W25Q_ENABLE_RST;
+  sCommand.AddressMode = QSPI_ADDRESS_NONE;
+  sCommand.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+  sCommand.DataMode = QSPI_DATA_NONE;
+  sCommand.DummyCycles = 0;
+  sCommand.DdrMode = QSPI_DDR_MODE_DISABLE;
+  sCommand.DdrHoldHalfCycle = QSPI_DDR_HHC_ANALOG_DELAY;
+  sCommand.SIOOMode = QSPI_SIOO_INST_EVERY_CMD;
+
+  if ((ret = HAL_QSPI_Command(&hqspi, &sCommand,
+      HAL_QPSI_TIMEOUT_DEFAULT_VALUE)) != HAL_OK) {
+    return ret;
+  }
+
+  /* Reset Device --------------------------- */
+  sCommand.InstructionMode = QSPI_INSTRUCTION_1_LINE;
+  sCommand.Instruction = W25Q_RESET;
+  sCommand.AddressMode = QSPI_ADDRESS_NONE;
+  sCommand.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+  sCommand.DataMode = QSPI_DATA_NONE;
+  sCommand.DummyCycles = 0;
+  sCommand.DdrMode = QSPI_DDR_MODE_DISABLE;
+  sCommand.DdrHoldHalfCycle = QSPI_DDR_HHC_ANALOG_DELAY;
+  sCommand.SIOOMode = QSPI_SIOO_INST_EVERY_CMD;
+
+  if ((ret = HAL_QSPI_Command(&hqspi, &sCommand,
+      HAL_QPSI_TIMEOUT_DEFAULT_VALUE)) != HAL_OK) {
+    return ret;
+  }
+
+  for (temp = 0; temp < 500000; temp++) {
+    __NOP();
+  }
+
+  return HAL_OK;
+}
+
+static uint8_t QSPI_WriteEnable(void) {
+  QSPI_CommandTypeDef sCommand = { 0 };
+  QSPI_AutoPollingTypeDef sConfig = { 0 };
+  HAL_StatusTypeDef ret;
+
+  /* Enable write operations ------------------------------------------ */
+  sCommand.InstructionMode = QSPI_INSTRUCTION_1_LINE;
+  sCommand.Instruction = W25Q_WRITE_ENABLE;
+  sCommand.AddressMode = QSPI_ADDRESS_NONE;
+  sCommand.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+  sCommand.DataMode = QSPI_DATA_NONE;
+  sCommand.DummyCycles = 0;
+  sCommand.DdrMode = QSPI_DDR_MODE_DISABLE;
+  sCommand.DdrHoldHalfCycle = QSPI_DDR_HHC_ANALOG_DELAY;
+  sCommand.SIOOMode = QSPI_SIOO_INST_EVERY_CMD;
+
+  if ((ret = HAL_QSPI_Command(&hqspi, &sCommand,
+      HAL_QPSI_TIMEOUT_DEFAULT_VALUE)) != HAL_OK) {
+    return ret;
+  }
+
+  /* Configure automatic polling mode to wait for write enabling ---- */
+  sConfig.Match = 0x02;
+  sConfig.Mask = 0x02;
+  sConfig.MatchMode = QSPI_MATCH_MODE_AND;
+  sConfig.StatusBytesSize = 1;
+  sConfig.Interval = 0x10;
+  sConfig.AutomaticStop = QSPI_AUTOMATIC_STOP_ENABLE;
+
+  sCommand.Instruction = W25Q_READ_SR1;
+  sCommand.DataMode = QSPI_DATA_1_LINE;
+
+  if ((ret = HAL_QSPI_AutoPolling(&hqspi, &sCommand, &sConfig,
+      HAL_QPSI_TIMEOUT_DEFAULT_VALUE)) != HAL_OK) {
+    return ret;
+  }
+  return HAL_OK;
+}
+
 ///@}

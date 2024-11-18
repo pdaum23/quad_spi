@@ -143,6 +143,8 @@ W25Q_STATE W25Q_GlobalReadOnly(bool enable);		///< Set read-only param to all ch
 
 W25Q_STATE W25Q_SwReset(bool force);	///< Software reset
 W25Q_STATE CSP_QSPI_EnableMemoryMappedMode(void);
+uint8_t QSPI_AutoPollingMemReady(void);
+uint8_t QSPI_ResetChip(void);
 
 
 /**
