@@ -143,18 +143,23 @@ int main(void)
   memset(testBuf, 0x55, 256);
   page_number++;
   W25Q_ReadRaw(testBuf, 256, page_number*MEM_PAGE_SIZE);
-
+  page_number = 0;
   memset(testBuf, 0x55, 256);
-  W25Q_ReadRaw(testBuf, 256, 0);
+  W25Q_ReadRaw(testBuf, 256, page_number*MEM_PAGE_SIZE);
   QSPI_AutoPollingMemReady();
-  //QSPI_WriteEnable();
   CSP_QSPI_EnableMemoryMappedMode();
   memset(testBuf, 0x55, 256);
   memcpy(testBuf, (uint8_t *) 0x90000000, 256);
   CSP_QSPI_DisableMemoryMappedMode();
   memset(testBuf, 0x55, 256);
-  W25Q_ReadRaw(testBuf, 256, 0);
-
+  W25Q_ReadRaw(testBuf, 256, page_number*MEM_PAGE_SIZE);
+  QSPI_AutoPollingMemReady();
+  CSP_QSPI_EnableMemoryMappedMode();
+  memset(testBuf, 0x55, 256);
+  memcpy(testBuf, (uint8_t *) 0x90000000, 256);
+  CSP_QSPI_DisableMemoryMappedMode();
+  memset(testBuf, 0x55, 256);
+  W25Q_ReadRaw(testBuf, 256, page_number*MEM_PAGE_SIZE);
 
   __NOP();
   /* USER CODE END 2 */
