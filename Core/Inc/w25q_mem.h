@@ -146,6 +146,7 @@ W25Q_STATE CSP_QSPI_EnableMemoryMappedMode(void);
 uint8_t QSPI_AutoPollingMemReady(void);
 uint8_t QSPI_ResetChip(void);
 uint8_t QSPI_WriteEnable(void);
+W25Q_STATE CSP_QSPI_DisableMemoryMappedMode(void);
 
 
 /**

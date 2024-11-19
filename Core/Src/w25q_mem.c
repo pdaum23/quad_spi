@@ -1556,6 +1556,32 @@ W25Q_STATE CSP_QSPI_EnableMemoryMappedMode(void) {
   return HAL_OK;
 }
 
+W25Q_STATE CSP_QSPI_DisableMemoryMappedMode(void) {
+  QSPI_CommandTypeDef sCommand = {};
+
+  /* Disable Memory-Mapped mode-------------------------------------------------- */
+
+  sCommand.InstructionMode = QSPI_INSTRUCTION_1_LINE;
+  sCommand.AddressSize = QSPI_ADDRESS_32_BITS;
+  sCommand.AlternateByteMode = QSPI_ALTERNATE_BYTES_1_LINE ;
+  sCommand.DdrMode = QSPI_DDR_MODE_DISABLE;
+  sCommand.DdrHoldHalfCycle = QSPI_DDR_HHC_ANALOG_DELAY;
+  sCommand.SIOOMode = QSPI_SIOO_INST_EVERY_CMD;
+  sCommand.AddressMode = QSPI_ADDRESS_1_LINE;
+  sCommand.DataMode = QSPI_DATA_4_LINES;
+  sCommand.NbData = 0;
+  sCommand.Address = 0;
+  sCommand.Instruction = W25Q_FAST_READ_QUAD_OUT_4B;
+  sCommand.DummyCycles = 0;
+
+  HAL_QSPI_Abort(&hqspi);/* WARNING: Do not make any other memory-mapped access (even using debugger) */
+  /* Go back to indirect mode */
+  if (HAL_QSPI_Command(&hqspi, &sCommand, HAL_QPSI_TIMEOUT_DEFAULT_VALUE) != HAL_OK) {
+    return HAL_ERROR;
+  }
+  return HAL_OK;
+}
+
 uint8_t QSPI_AutoPollingMemReady(void) {
 
   QSPI_CommandTypeDef sCommand = {};
