@@ -25,6 +25,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "w25q_mem.h"
+#include "datalog.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -107,6 +108,7 @@ int main(void)
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
   W25Q_Init();		 // init the chip
+  datalog_Initialize();
   W25Q_EraseSector(0); // Erase sector 0 for write read test
 
   // read data
@@ -160,6 +162,8 @@ int main(void)
   CSP_QSPI_DisableMemoryMappedMode();
   memset(testBuf, 0x55, 256);
   W25Q_ReadRaw(testBuf, 256, page_number*MEM_PAGE_SIZE);
+
+  //W25Q_EraseChip();
 
   __NOP();
   /* USER CODE END 2 */

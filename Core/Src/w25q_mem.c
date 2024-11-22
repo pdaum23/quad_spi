@@ -46,10 +46,10 @@ W25Q_STATUS_REG w25q_status; 		///< Internal status structure instance
 W25Q_STATE W25Q_WriteEnable(bool enable); 	///< Toggle WOL bit
 W25Q_STATE W25Q_EnableQSPI(bool enable);	///< Toggle QE bit
 W25Q_STATE W25Q_Enter4ByteMode(bool enable); 	///< Toggle ADS bit
-W25Q_STATE W25Q_SetExtendedAddr(u8_t Addr);  	///< Set addr in 3-byte mode
-W25Q_STATE W25Q_GetExtendedAddr(u8_t *outAddr); ///< Get addr in 3-byte mode
+W25Q_STATE W25Q_SetExtendedAddr(uint8_t Addr);  	///< Set addr in 3-byte mode
+W25Q_STATE W25Q_GetExtendedAddr(uint8_t *outAddr); ///< Get addr in 3-byte mode
 
-static inline u32_t page_to_addr(u32_t pageNum, u8_t pageShift); ///< Translate page addr to byte addr
+static inline uint32_t page_to_addr(uint32_t pageNum, uint8_t pageShift); ///< Translate page addr to byte addr
 /// @}
 
 /**
@@ -74,7 +74,7 @@ W25Q_STATE W25Q_Init(void) {
 	W25Q_STATE state;		// temp status variable
 
 	// read id
-	u8_t id = 0;
+	uint8_t id = 0;
 
 	state = W25Q_ReadID(&id);
 	if (state != W25Q_OK)
@@ -91,7 +91,7 @@ W25Q_STATE W25Q_Init(void) {
 	/* If power-default 4-byte
 	 mode disabled */
 	if (!w25q_status.ADP) {
-		u8_t buf_reg = 0;
+		uint8_t buf_reg = 0;
 		state = W25Q_ReadStatusReg(&buf_reg, 3);
 		if (state != W25Q_OK)
 			return state;
@@ -112,7 +112,7 @@ W25Q_STATE W25Q_Init(void) {
 
 	/* If Quad-SPI mode disabled */
 	if (!w25q_status.QE) {
-		u8_t buf_reg = 0;
+		uint8_t buf_reg = 0;
 		state = W25Q_ReadStatusReg(&buf_reg, 2);
 		if (state != W25Q_OK)
 			return state;
@@ -164,7 +164,7 @@ W25Q_STATE W25Q_EnableVolatileSR(void) {
  * @param[in] reg_num Desired register 1..3
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ReadStatusReg(u8_t *reg_data, u8_t reg_num) {
+W25Q_STATE W25Q_ReadStatusReg(uint8_t *reg_data, uint8_t reg_num) {
 	QSPI_CommandTypeDef com;
 
 	com.InstructionMode = QSPI_INSTRUCTION_1_LINE; // QSPI_INSTRUCTION_...
@@ -214,7 +214,7 @@ W25Q_STATE W25Q_ReadStatusReg(u8_t *reg_data, u8_t reg_num) {
  * @param[in] reg_num Desired register 1..3
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_WriteStatusReg(u8_t reg_data, u8_t reg_num) {
+W25Q_STATE W25Q_WriteStatusReg(uint8_t reg_data, uint8_t reg_num) {
 	while (W25Q_IsBusy() == W25Q_BUSY)
 		w25q_delay(1);
 
@@ -275,7 +275,7 @@ W25Q_STATE W25Q_ReadStatusStruct(W25Q_STATUS_REG *status) {
 	W25Q_STATE state;
 
 	// buffer register variables
-	u8_t SRs[3] = { 0, };
+	uint8_t SRs[3] = { 0, };
 
 	// first portion
 	state = W25Q_ReadStatusReg(&SRs[0], 1);
@@ -313,7 +313,7 @@ W25Q_STATE W25Q_ReadStatusStruct(W25Q_STATUS_REG *status) {
  */
 W25Q_STATE W25Q_IsBusy(void) {
 	W25Q_STATE state;
-	u8_t sr = 0;
+	uint8_t sr = 0;
 
 	state = W25Q_ReadStatusReg(&sr, 1);
 	if (state != W25Q_OK)
@@ -340,11 +340,11 @@ W25Q_STATE W25Q_IsBusy(void) {
  * @param[in] pageNum Page number (0..PAGE_COUNT-1)
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ReadSByte(i8_t *buf, u8_t pageShift, u32_t pageNum) {
+W25Q_STATE W25Q_ReadSByte(int8_t *buf, uint8_t pageShift, uint32_t pageNum) {
 	if (pageNum >= PAGE_COUNT)
 		return W25Q_PARAM_ERR;
-	u32_t rawAddr = page_to_addr(pageNum, pageShift);
-	u8_t data;
+	uint32_t rawAddr = page_to_addr(pageNum, pageShift);
+	uint8_t data;
 	W25Q_STATE state = W25Q_ReadRaw(&data, 1, rawAddr);
 	if (state != W25Q_OK)
 		return state;
@@ -361,11 +361,11 @@ W25Q_STATE W25Q_ReadSByte(i8_t *buf, u8_t pageShift, u32_t pageNum) {
  * @param[in] pageNum Page number (0..PAGE_COUNT-1)
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ReadByte(u8_t *buf, u8_t pageShift, u32_t pageNum) {
+W25Q_STATE W25Q_ReadByte(uint8_t *buf, uint8_t pageShift, uint32_t pageNum) {
 	if (pageNum >= PAGE_COUNT)
 		return W25Q_PARAM_ERR;
-	u32_t rawAddr = page_to_addr(pageNum, pageShift);
-	u8_t data;
+	uint32_t rawAddr = page_to_addr(pageNum, pageShift);
+	uint8_t data;
 	W25Q_STATE state = W25Q_ReadRaw(&data, 1, rawAddr);
 	if (state != W25Q_OK)
 		return state;
@@ -382,11 +382,11 @@ W25Q_STATE W25Q_ReadByte(u8_t *buf, u8_t pageShift, u32_t pageNum) {
  * @param[in] pageNum Page number (0..PAGE_COUNT-1)
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ReadSWord(i16_t *buf, u8_t pageShift, u32_t pageNum) {
+W25Q_STATE W25Q_ReadSWord(int16_t *buf, uint8_t pageShift, uint32_t pageNum) {
 	if (pageNum >= PAGE_COUNT || pageShift > 256 - 2)
 		return W25Q_PARAM_ERR;
-	u32_t rawAddr = page_to_addr(pageNum, pageShift);
-	u8_t data[2];
+	uint32_t rawAddr = page_to_addr(pageNum, pageShift);
+	uint8_t data[2];
 	W25Q_STATE state = W25Q_ReadRaw(data, 2, rawAddr);
 	if (state != W25Q_OK)
 		return state;
@@ -403,11 +403,11 @@ W25Q_STATE W25Q_ReadSWord(i16_t *buf, u8_t pageShift, u32_t pageNum) {
  * @param[in] pageNum Page number (0..PAGE_COUNT-1)
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ReadWord(u16_t *buf, u8_t pageShift, u32_t pageNum) {
+W25Q_STATE W25Q_ReadWord(uint16_t *buf, uint8_t pageShift, uint32_t pageNum) {
 	if (pageNum >= PAGE_COUNT || pageShift > 256 - 2)
 		return W25Q_PARAM_ERR;
-	u32_t rawAddr = page_to_addr(pageNum, pageShift);
-	u8_t data[2];
+	uint32_t rawAddr = page_to_addr(pageNum, pageShift);
+	uint8_t data[2];
 	W25Q_STATE state = W25Q_ReadRaw(data, 2, rawAddr);
 	if (state != W25Q_OK)
 		return state;
@@ -424,11 +424,11 @@ W25Q_STATE W25Q_ReadWord(u16_t *buf, u8_t pageShift, u32_t pageNum) {
  * @param[in] pageNum Page number (0..PAGE_COUNT-1)
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ReadSLong(i32_t *buf, u8_t pageShift, u32_t pageNum) {
+W25Q_STATE W25Q_ReadSLong(int32_t *buf, uint8_t pageShift, uint32_t pageNum) {
 	if (pageNum >= PAGE_COUNT || pageShift > 256 - 4)
 		return W25Q_PARAM_ERR;
-	u32_t rawAddr = page_to_addr(pageNum, pageShift);
-	u8_t data[4];
+	uint32_t rawAddr = page_to_addr(pageNum, pageShift);
+	uint8_t data[4];
 	W25Q_STATE state = W25Q_ReadRaw(data, 4, rawAddr);
 	if (state != W25Q_OK)
 		return state;
@@ -445,11 +445,11 @@ W25Q_STATE W25Q_ReadSLong(i32_t *buf, u8_t pageShift, u32_t pageNum) {
  * @param[in] pageNum Page number (0..PAGE_COUNT-1)
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ReadLong(u32_t *buf, u8_t pageShift, u32_t pageNum) {
+W25Q_STATE W25Q_ReadLong(uint32_t *buf, uint8_t pageShift, uint32_t pageNum) {
 	if (pageNum >= PAGE_COUNT || pageShift > 256 - 4)
 		return W25Q_PARAM_ERR;
-	u32_t rawAddr = page_to_addr(pageNum, pageShift);
-	u8_t data[4];
+	uint32_t rawAddr = page_to_addr(pageNum, pageShift);
+	uint8_t data[4];
 	W25Q_STATE state = W25Q_ReadRaw(data, 4, rawAddr);
 	if (state != W25Q_OK)
 		return state;
@@ -468,10 +468,10 @@ W25Q_STATE W25Q_ReadLong(u32_t *buf, u8_t pageShift, u32_t pageNum) {
  * @param[in] pageNum Page number (0..PAGE_COUNT-1)
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ReadData(u8_t *buf, u16_t len, u8_t pageShift, u32_t pageNum) {
+W25Q_STATE W25Q_ReadData(uint8_t *buf, uint16_t len, uint8_t pageShift, uint32_t pageNum) {
 	if (pageNum >= PAGE_COUNT || len == 0 || len > 256 || pageShift > 256 - len)
 		return W25Q_PARAM_ERR;
-	u32_t rawAddr = page_to_addr(pageNum, pageShift);
+	uint32_t rawAddr = page_to_addr(pageNum, pageShift);
 	return W25Q_ReadRaw(buf, len, rawAddr);
 }
 
@@ -486,7 +486,7 @@ W25Q_STATE W25Q_ReadData(u8_t *buf, u16_t len, u8_t pageShift, u32_t pageNum) {
  * @param[in] rawAddr Start address of chip's cell
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ReadRaw(u8_t *buf, u16_t data_len, u32_t rawAddr) {
+W25Q_STATE W25Q_ReadRaw(uint8_t *buf, uint16_t data_len, uint32_t rawAddr) {
 	if (data_len > 256 || data_len == 0)
 		return W25Q_PARAM_ERR;
 
@@ -539,7 +539,7 @@ W25Q_STATE W25Q_ReadRaw(u8_t *buf, u16_t data_len, u32_t rawAddr) {
  * @param[in] Addr Address to data
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_SingleRead(u8_t *buf, u32_t len, u32_t Addr) {
+W25Q_STATE W25Q_SingleRead(uint8_t *buf, uint32_t len, uint32_t Addr) {
 	QSPI_CommandTypeDef com;
 
 	com.InstructionMode = QSPI_INSTRUCTION_1_LINE; // QSPI_INSTRUCTION_...
@@ -591,7 +591,7 @@ W25Q_STATE W25Q_SingleRead(u8_t *buf, u32_t len, u32_t Addr) {
  * @param[in] WrapSize Wrap size: 8/16/32/64 / 0 - disable
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_SetBurstWrap(u8_t WrapSize) {
+W25Q_STATE W25Q_SetBurstWrap(uint8_t WrapSize) {
 	return W25Q_PARAM_ERR;
 }
 
@@ -604,11 +604,11 @@ W25Q_STATE W25Q_SetBurstWrap(u8_t WrapSize) {
  * @param[in] pageNum Page number (0..PAGE_COUNT-1)
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ProgramSByte(i8_t buf, u8_t pageShift, u32_t pageNum) {
+W25Q_STATE W25Q_ProgramSByte(int8_t buf, uint8_t pageShift, uint32_t pageNum) {
 	if (pageNum >= PAGE_COUNT)
 		return W25Q_PARAM_ERR;
-	u32_t rawAddr = page_to_addr(pageNum, pageShift);
-	u8_t data;
+	uint32_t rawAddr = page_to_addr(pageNum, pageShift);
+	uint8_t data;
 	memcpy(&data, &buf, 1);
 	return W25Q_ProgramRaw(&data, 1, rawAddr);
 }
@@ -622,11 +622,11 @@ W25Q_STATE W25Q_ProgramSByte(i8_t buf, u8_t pageShift, u32_t pageNum) {
  * @param[in] pageNum Page number (0..PAGE_COUNT-1)
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ProgramByte(u8_t buf, u8_t pageShift, u32_t pageNum) {
+W25Q_STATE W25Q_ProgramByte(uint8_t buf, uint8_t pageShift, uint32_t pageNum) {
 	if (pageNum >= PAGE_COUNT)
 		return W25Q_PARAM_ERR;
-	u32_t rawAddr = page_to_addr(pageNum, pageShift);
-	u8_t data;
+	uint32_t rawAddr = page_to_addr(pageNum, pageShift);
+	uint8_t data;
 	memcpy(&data, &buf, 1);
 	return W25Q_ProgramRaw(&data, 1, rawAddr);
 }
@@ -640,11 +640,11 @@ W25Q_STATE W25Q_ProgramByte(u8_t buf, u8_t pageShift, u32_t pageNum) {
  * @param[in] pageNum Page number (0..PAGE_COUNT-1)
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ProgramSWord(i16_t buf, u8_t pageShift, u32_t pageNum) {
+W25Q_STATE W25Q_ProgramSWord(int16_t buf, uint8_t pageShift, uint32_t pageNum) {
 	if (pageNum >= PAGE_COUNT || pageShift > 256 - 2)
 		return W25Q_PARAM_ERR;
-	u32_t rawAddr = page_to_addr(pageNum, pageShift);
-	u8_t data[2];
+	uint32_t rawAddr = page_to_addr(pageNum, pageShift);
+	uint8_t data[2];
 	memcpy(data, &buf, 2);
 	return W25Q_ProgramRaw(data, 2, rawAddr);
 }
@@ -658,11 +658,11 @@ W25Q_STATE W25Q_ProgramSWord(i16_t buf, u8_t pageShift, u32_t pageNum) {
  * @param[in] pageNum Page number (0..PAGE_COUNT-1)
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ProgramWord(u16_t buf, u8_t pageShift, u32_t pageNum) {
+W25Q_STATE W25Q_ProgramWord(uint16_t buf, uint8_t pageShift, uint32_t pageNum) {
 	if (pageNum >= PAGE_COUNT || pageShift > 256 - 2)
 		return W25Q_PARAM_ERR;
-	u32_t rawAddr = page_to_addr(pageNum, pageShift);
-	u8_t data[2];
+	uint32_t rawAddr = page_to_addr(pageNum, pageShift);
+	uint8_t data[2];
 	memcpy(data, &buf, 2);
 	return W25Q_ProgramRaw(data, 2, rawAddr);
 }
@@ -676,11 +676,11 @@ W25Q_STATE W25Q_ProgramWord(u16_t buf, u8_t pageShift, u32_t pageNum) {
  * @param[in] pageNum Page number (0..PAGE_COUNT-1)
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ProgramSLong(i32_t buf, u8_t pageShift, u32_t pageNum) {
+W25Q_STATE W25Q_ProgramSLong(int32_t buf, uint8_t pageShift, uint32_t pageNum) {
 	if (pageNum >= PAGE_COUNT || pageShift > 256 - 4)
 		return W25Q_PARAM_ERR;
-	u32_t rawAddr = page_to_addr(pageNum, pageShift);
-	u8_t data[4];
+	uint32_t rawAddr = page_to_addr(pageNum, pageShift);
+	uint8_t data[4];
 	memcpy(data, &buf, 4);
 	return W25Q_ProgramRaw(data, 4, rawAddr);
 }
@@ -694,11 +694,11 @@ W25Q_STATE W25Q_ProgramSLong(i32_t buf, u8_t pageShift, u32_t pageNum) {
  * @param[in] pageNum Page number (0..PAGE_COUNT-1)
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ProgramLong(u32_t buf, u8_t pageShift, u32_t pageNum) {
+W25Q_STATE W25Q_ProgramLong(uint32_t buf, uint8_t pageShift, uint32_t pageNum) {
 	if (pageNum >= PAGE_COUNT || pageShift > 256 - 4)
 		return W25Q_PARAM_ERR;
-	u32_t rawAddr = page_to_addr(pageNum, pageShift);
-	u8_t data[4];
+	uint32_t rawAddr = page_to_addr(pageNum, pageShift);
+	uint8_t data[4];
 	memcpy(data, &buf, 4);
 	return W25Q_ProgramRaw(data, 4, rawAddr);
 }
@@ -714,10 +714,10 @@ W25Q_STATE W25Q_ProgramLong(u32_t buf, u8_t pageShift, u32_t pageNum) {
  * @param[in] pageNum Page number (0..PAGE_COUNT-1)
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ProgramData(u8_t *buf, u16_t len, u8_t pageShift, u32_t pageNum) {
+W25Q_STATE W25Q_ProgramData(uint8_t *buf, uint16_t len, uint8_t pageShift, uint32_t pageNum) {
 	if (pageNum >= PAGE_COUNT || len == 0 || len > 256 || pageShift > 256 - len)
 		return W25Q_PARAM_ERR;
-	u32_t rawAddr = page_to_addr(pageNum, pageShift);
+	uint32_t rawAddr = page_to_addr(pageNum, pageShift);
 	return W25Q_ProgramRaw(buf, len, rawAddr);
 }
 
@@ -732,7 +732,7 @@ W25Q_STATE W25Q_ProgramData(u8_t *buf, u16_t len, u8_t pageShift, u32_t pageNum)
  * @param[in] rawAddr Start address of chip's cell
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ProgramRaw(u8_t *buf, u16_t data_len, u32_t rawAddr) {
+W25Q_STATE W25Q_ProgramRaw(uint8_t *buf, uint16_t data_len, uint32_t rawAddr) {
 	if (data_len > 256 || data_len == 0)
 		return W25Q_PARAM_ERR;
 
@@ -798,14 +798,14 @@ W25Q_STATE W25Q_ProgramRaw(u8_t *buf, u16_t data_len, u32_t rawAddr) {
  * @param[in] SectAddr Sector start address
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_EraseSector(u32_t SectAddr) {
+W25Q_STATE W25Q_EraseSector(uint32_t SectAddr) {
 	if (SectAddr >= SECTOR_COUNT)
 		return W25Q_PARAM_ERR;
 
 	while (W25Q_IsBusy() == W25Q_BUSY)
 		w25q_delay(1);
 
-	u32_t rawAddr = SectAddr * MEM_SECTOR_SIZE * 1024U;
+	uint32_t rawAddr = SectAddr * MEM_SECTOR_SIZE * 1024U;
 
 	W25Q_STATE state = W25Q_WriteEnable(1);
 	if (state != W25Q_OK)
@@ -856,7 +856,7 @@ W25Q_STATE W25Q_EraseSector(u32_t SectAddr) {
  * @param[in] size Size of block: 32KB or 64KB
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_EraseBlock(u32_t BlockAddr, u8_t size) {
+W25Q_STATE W25Q_EraseBlock(uint32_t BlockAddr, uint8_t size) {
 	if (size != 32 && size != 64)
 		return W25Q_PARAM_ERR;
 	if ((size == 64 && BlockAddr >= BLOCK_COUNT)
@@ -866,7 +866,7 @@ W25Q_STATE W25Q_EraseBlock(u32_t BlockAddr, u8_t size) {
 	while (W25Q_IsBusy() == W25Q_BUSY)
 		w25q_delay(1);
 
-	u32_t rawAddr = BlockAddr * MEM_SECTOR_SIZE * 1024U * 16;
+	uint32_t rawAddr = BlockAddr * MEM_SECTOR_SIZE * 1024U * 16;
 	if (size == 32)
 		rawAddr /= 2;
 
@@ -1161,7 +1161,7 @@ W25Q_STATE W25Q_WakeUP(void) {
  * @param[out] buf Pointer to output data (1 byte)
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ReadID(u8_t *buf) {
+W25Q_STATE W25Q_ReadID(uint8_t *buf) {
 	QSPI_CommandTypeDef com;
 
 	com.InstructionMode = QSPI_INSTRUCTION_1_LINE; // QSPI_INSTRUCTION_...
@@ -1202,7 +1202,7 @@ W25Q_STATE W25Q_ReadID(u8_t *buf) {
  * @param[out] buf Pointer to data from ID register
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ReadFullID(u8_t *buf) {
+W25Q_STATE W25Q_ReadFullID(uint8_t *buf) {
 	return W25Q_PARAM_ERR;
 }
 
@@ -1214,7 +1214,7 @@ W25Q_STATE W25Q_ReadFullID(u8_t *buf) {
  * @param[out] buf Pointer to data from ID register
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ReadUID(u8_t *buf) {
+W25Q_STATE W25Q_ReadUID(uint8_t *buf) {
 	return W25Q_PARAM_ERR;
 }
 
@@ -1226,8 +1226,38 @@ W25Q_STATE W25Q_ReadUID(u8_t *buf) {
  * @param[out] buf Pointer to data from ID register
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ReadJEDECID(u8_t *buf) {
-	return W25Q_PARAM_ERR;
+W25Q_STATE W25Q_ReadJEDECID(uint32_t *jedecID) {
+  QSPI_CommandTypeDef com;
+  uint8_t buf[3];
+  com.InstructionMode = QSPI_INSTRUCTION_1_LINE; // QSPI_INSTRUCTION_...
+  com.Instruction = W25Q_READ_JEDEC_ID;  // Command
+
+  com.AddressMode = QSPI_ADDRESS_NONE;
+  com.AddressSize = QSPI_ADDRESS_NONE;
+  com.Address = 0x0U;
+
+  com.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+  com.AlternateBytes = QSPI_ALTERNATE_BYTES_NONE;
+  com.AlternateBytesSize = QSPI_ALTERNATE_BYTES_NONE;
+
+  com.DummyCycles = 0;
+  com.DataMode = QSPI_DATA_1_LINE;
+  com.NbData = 3;
+
+  com.DdrMode = QSPI_DDR_MODE_DISABLE;
+  com.DdrHoldHalfCycle = QSPI_DDR_HHC_ANALOG_DELAY;
+  com.SIOOMode = QSPI_SIOO_INST_EVERY_CMD;
+
+  if (HAL_QSPI_Command(&hqspi, &com, HAL_QSPI_TIMEOUT_DEFAULT_VALUE)
+      != HAL_OK) {
+    return W25Q_SPI_ERR;
+  }
+  if (HAL_QSPI_Receive(&hqspi, buf, HAL_QSPI_TIMEOUT_DEFAULT_VALUE)
+      != HAL_OK) {
+    return W25Q_SPI_ERR;
+  }
+  *jedecID = buf[2] + (buf[1] << 8) + (buf[0] << 16);
+  return W25Q_OK;
 }
 
 /**
@@ -1238,7 +1268,7 @@ W25Q_STATE W25Q_ReadJEDECID(u8_t *buf) {
  * @param[out] buf Pointer to data from ID register
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ReadSFDPRegister(u8_t *buf) {
+W25Q_STATE W25Q_ReadSFDPRegister(uint8_t *buf) {
 	return W25Q_PARAM_ERR;
 }
 
@@ -1257,7 +1287,7 @@ W25Q_STATE W25Q_ReadSFDPRegister(u8_t *buf) {
  * @param[in] numReg Number of security register (1..3 / 0-all)
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_EraseSecurityRegisters(u8_t numReg) {
+W25Q_STATE W25Q_EraseSecurityRegisters(uint8_t numReg) {
 	return W25Q_PARAM_ERR;
 }
 
@@ -1271,7 +1301,7 @@ W25Q_STATE W25Q_EraseSecurityRegisters(u8_t numReg) {
  * @param[in] byteAddr Byte addr in register (0..255)
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ProgSecurityRegisters(u8_t *buf, u8_t numReg, u8_t byteAddr) {
+W25Q_STATE W25Q_ProgSecurityRegisters(uint8_t *buf, uint8_t numReg, uint8_t byteAddr) {
 	return W25Q_PARAM_ERR;
 }
 
@@ -1285,7 +1315,7 @@ W25Q_STATE W25Q_ProgSecurityRegisters(u8_t *buf, u8_t numReg, u8_t byteAddr) {
  * @param[in] byteAddr Byte addr in register (0..255)
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_ReadSecurityRegisters(u8_t *buf, u8_t numReg, u8_t byteAddr) {
+W25Q_STATE W25Q_ReadSecurityRegisters(uint8_t *buf, uint8_t numReg, uint8_t byteAddr) {
 	return W25Q_PARAM_ERR;
 }
 
@@ -1305,7 +1335,7 @@ W25Q_STATE W25Q_ReadSecurityRegisters(u8_t *buf, u8_t numReg, u8_t byteAddr) {
  * @param[in] enable 1-Enable/0-Disable
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_BlockReadOnly(u32_t Addr, bool enable) {
+W25Q_STATE W25Q_BlockReadOnly(uint32_t Addr, bool enable) {
 	return W25Q_PARAM_ERR;
 }
 
@@ -1318,7 +1348,7 @@ W25Q_STATE W25Q_BlockReadOnly(u32_t Addr, bool enable) {
  * @param[in] Addr Block address
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_BlockReadOnlyCheck(bool *state, u32_t Addr) {
+W25Q_STATE W25Q_BlockReadOnlyCheck(bool *state, uint32_t Addr) {
 	return W25Q_PARAM_ERR;
 }
 
@@ -1501,7 +1531,7 @@ W25Q_STATE W25Q_Enter4ByteMode(bool enable) {
  * @param[in] Addr 4th byte of addr
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_SetExtendedAddr(u8_t Addr) {
+W25Q_STATE W25Q_SetExtendedAddr(uint8_t Addr) {
 	return W25Q_PARAM_ERR;
 }
 
@@ -1513,7 +1543,7 @@ W25Q_STATE W25Q_SetExtendedAddr(u8_t Addr) {
  * @param[out] Addr 4th byte of addr
  * @return W25Q_STATE enum
  */
-W25Q_STATE W25Q_GetExtendedAddr(u8_t *outAddr) {
+W25Q_STATE W25Q_GetExtendedAddr(uint8_t *outAddr) {
 	return W25Q_PARAM_ERR;
 }
 
@@ -1525,11 +1555,11 @@ W25Q_STATE W25Q_GetExtendedAddr(u8_t *outAddr) {
  * @param[in] pageShift Byte to shift inside page
  * @return byte-address
  */
-u32_t page_to_addr(u32_t pageNum, u8_t pageShift) {
+uint32_t page_to_addr(uint32_t pageNum, uint8_t pageShift) {
 	return pageNum * MEM_PAGE_SIZE + pageShift;
 }
 
-W25Q_STATE CSP_QSPI_EnableMemoryMappedMode(void) {
+uint8_t CSP_QSPI_EnableMemoryMappedMode(void) {
 
   QSPI_CommandTypeDef sCommand = {};
   QSPI_MemoryMappedTypeDef sMemMappedCfg ={};
@@ -1556,7 +1586,7 @@ W25Q_STATE CSP_QSPI_EnableMemoryMappedMode(void) {
   return HAL_OK;
 }
 
-W25Q_STATE CSP_QSPI_DisableMemoryMappedMode(void) {
+uint8_t CSP_QSPI_DisableMemoryMappedMode(void) {
   QSPI_CommandTypeDef sCommand = {};
 
   /* Disable Memory-Mapped mode-------------------------------------------------- */

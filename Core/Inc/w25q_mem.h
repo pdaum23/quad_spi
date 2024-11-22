@@ -34,7 +34,7 @@ extern "C" {
  */
 // YOUR CHIP'S SETTINGS
 /// Mem size in MB-bit
-#define MEM_FLASH_SIZE 256U 	// 256 MB-bit
+#define MEM_FLASH_SIZE 512U 	// 256 MB-bit
 /// Mem big block size in KB
 #define MEM_BLOCK_SIZE 64U		// 64 KB: 256 pages
 /// Mem small block size in KB
@@ -44,11 +44,11 @@ extern "C" {
 /// Mem page size in bytes
 #define MEM_PAGE_SIZE  256U		// 256 byte : 1 page
 /// Blocks count
-#define BLOCK_COUNT (MEM_FLASH_SIZE * 2) // 512 blocks
+#define BLOCK_COUNT (MEM_FLASH_SIZE * 2) // 1024 blocks
 /// Sector count
-#define SECTOR_COUNT (BLOCK_COUNT * 16)  // 8192 sectors
+#define SECTOR_COUNT (BLOCK_COUNT * 16)  // 16384 sectors
 /// Pages count
-#define PAGE_COUNT (SECTOR_COUNT * 16)	 // 131'072 pages
+#define PAGE_COUNT (SECTOR_COUNT * 16)	 // 262144 pages
 
 /**@}*/
 
@@ -91,35 +91,35 @@ typedef struct{
 W25Q_STATE W25Q_Init(void);		///< Initalize function
 
 W25Q_STATE W25Q_EnableVolatileSR(void);						 ///< Make Status Register Volatile
-W25Q_STATE W25Q_ReadStatusReg(u8_t *reg_data, u8_t reg_num); ///< Read status register to variable
-W25Q_STATE W25Q_WriteStatusReg(u8_t reg_data, u8_t reg_num);///< Write status register from variable
+W25Q_STATE W25Q_ReadStatusReg(uint8_t *reg_data, uint8_t reg_num); ///< Read status register to variable
+W25Q_STATE W25Q_WriteStatusReg(uint8_t reg_data, uint8_t reg_num);///< Write status register from variable
 W25Q_STATE W25Q_ReadStatusStruct(W25Q_STATUS_REG *status);	 ///< Read all status registers to struct
 W25Q_STATE W25Q_IsBusy(void);	///< Check chip's busy status
 
-W25Q_STATE W25Q_ReadSByte(i8_t *buf, u8_t pageShift, u32_t pageNum);			///< Read signed 8-bit variable
-W25Q_STATE W25Q_ReadByte(u8_t *buf, u8_t pageShift, u32_t pageNum);			 	///< Read 8-bit variable
-W25Q_STATE W25Q_ReadSWord(i16_t *buf, u8_t pageShift, u32_t pageNum);			///< Read signed 16-bit variable
-W25Q_STATE W25Q_ReadWord(u16_t *buf, u8_t pageShift, u32_t pageNum);			///< Read 16-bit variable
-W25Q_STATE W25Q_ReadSLong(i32_t *buf, u8_t pageShift, u32_t pageNum);			///< Read signed 32-bit variable
-W25Q_STATE W25Q_ReadLong(u32_t *buf, u8_t pageShift, u32_t pageNum);			///< Read 32-bit variable
-W25Q_STATE W25Q_ReadData(u8_t *buf, u16_t len, u8_t pageShift, u32_t pageNum);  ///< Read any 8-bit data
-W25Q_STATE W25Q_ReadRaw(u8_t *buf, u16_t data_len, u32_t rawAddr);				///< Read data from raw addr
-W25Q_STATE W25Q_SingleRead(u8_t *buf, u32_t len, u32_t Addr);					///< Read data from raw addr by single line
+W25Q_STATE W25Q_ReadSByte(int8_t *buf, uint8_t pageShift, uint32_t pageNum);			///< Read signed 8-bit variable
+W25Q_STATE W25Q_ReadByte(uint8_t *buf, uint8_t pageShift, uint32_t pageNum);			 	///< Read 8-bit variable
+W25Q_STATE W25Q_ReadSWord(int16_t *buf, uint8_t pageShift, uint32_t pageNum);			///< Read signed 16-bit variable
+W25Q_STATE W25Q_ReadWord(uint16_t *buf, uint8_t pageShift, uint32_t pageNum);			///< Read 16-bit variable
+W25Q_STATE W25Q_ReadSLong(int32_t *buf, uint8_t pageShift, uint32_t pageNum);			///< Read signed 32-bit variable
+W25Q_STATE W25Q_ReadLong(uint32_t *buf, uint8_t pageShift, uint32_t pageNum);			///< Read 32-bit variable
+W25Q_STATE W25Q_ReadData(uint8_t *buf, uint16_t len, uint8_t pageShift, uint32_t pageNum);  ///< Read any 8-bit data
+W25Q_STATE W25Q_ReadRaw(uint8_t *buf, uint16_t data_len, uint32_t rawAddr);				///< Read data from raw addr
+W25Q_STATE W25Q_SingleRead(uint8_t *buf, uint32_t len, uint32_t Addr);					///< Read data from raw addr by single line
 
-W25Q_STATE W25Q_EraseSector(u32_t SectAddr);			///< Erase 4KB Sector
-W25Q_STATE W25Q_EraseBlock(u32_t BlockAddr, u8_t size); ///< Erase 32KB/64KB Sector
+W25Q_STATE W25Q_EraseSector(uint32_t SectAddr);			///< Erase 4KB Sector
+W25Q_STATE W25Q_EraseBlock(uint32_t BlockAddr, uint8_t size); ///< Erase 32KB/64KB Sector
 W25Q_STATE W25Q_EraseChip(void);						///< Erase all chip
 
-W25Q_STATE W25Q_ProgramSByte(i8_t buf, u8_t pageShift, u32_t pageNum);			 ///< Program signed 8-bit variable
-W25Q_STATE W25Q_ProgramByte(u8_t buf, u8_t pageShift, u32_t pageNum);			 ///< Program 8-bit variable
-W25Q_STATE W25Q_ProgramSWord(i16_t buf, u8_t pageShift, u32_t pageNum);			 ///< Program signed 16-bit variable
-W25Q_STATE W25Q_ProgramWord(u16_t buf, u8_t pageShift, u32_t pageNum);			 ///< Program 16-bit variable
-W25Q_STATE W25Q_ProgramSLong(i32_t buf, u8_t pageShift, u32_t pageNum);			 ///< Program signed 32-bit variable
-W25Q_STATE W25Q_ProgramLong(u32_t buf, u8_t pageShift, u32_t pageNum);			 ///< Program 32-bit variable
-W25Q_STATE W25Q_ProgramData(u8_t *buf, u16_t len, u8_t pageShift, u32_t pageNum); ///< Program any 8-bit data
-W25Q_STATE W25Q_ProgramRaw(u8_t *buf, u16_t data_len, u32_t rawAddr); 					 ///< Program data to raw addr
+W25Q_STATE W25Q_ProgramSByte(int8_t buf, uint8_t pageShift, uint32_t pageNum);			 ///< Program signed 8-bit variable
+W25Q_STATE W25Q_ProgramByte(uint8_t buf, uint8_t pageShift, uint32_t pageNum);			 ///< Program 8-bit variable
+W25Q_STATE W25Q_ProgramSWord(int16_t buf, uint8_t pageShift, uint32_t pageNum);			 ///< Program signed 16-bit variable
+W25Q_STATE W25Q_ProgramWord(uint16_t buf, uint8_t pageShift, uint32_t pageNum);			 ///< Program 16-bit variable
+W25Q_STATE W25Q_ProgramSLong(int32_t buf, uint8_t pageShift, uint32_t pageNum);			 ///< Program signed 32-bit variable
+W25Q_STATE W25Q_ProgramLong(uint32_t buf, uint8_t pageShift, uint32_t pageNum);			 ///< Program 32-bit variable
+W25Q_STATE W25Q_ProgramData(uint8_t *buf, uint16_t len, uint8_t pageShift, uint32_t pageNum); ///< Program any 8-bit data
+W25Q_STATE W25Q_ProgramRaw(uint8_t *buf, uint16_t data_len, uint32_t rawAddr); 					 ///< Program data to raw addr
 
-W25Q_STATE W25Q_SetBurstWrap(u8_t WrapSize);		///< Set Burst with Wrap
+W25Q_STATE W25Q_SetBurstWrap(uint8_t WrapSize);		///< Set Burst with Wrap
 
 W25Q_STATE W25Q_ProgSuspend(void);	///< Pause Programm/Erase operation
 W25Q_STATE W25Q_ProgResume(void);	///< Resume Programm/Erase operation
@@ -127,26 +127,26 @@ W25Q_STATE W25Q_ProgResume(void);	///< Resume Programm/Erase operation
 W25Q_STATE W25Q_Sleep(void);	///< Set low current consumption
 W25Q_STATE W25Q_WakeUP(void);	///< Wake the chip up from sleep mode
 
-W25Q_STATE W25Q_ReadID(u8_t *buf);				///< Read chip ID
-W25Q_STATE W25Q_ReadFullID(u8_t *buf);			///< Read full chip ID (Manufacturer ID + Device ID)
-W25Q_STATE W25Q_ReadUID(u8_t *buf);				///< Read unique chip ID
-W25Q_STATE W25Q_ReadJEDECID(u8_t *buf); 		///< Read ID by JEDEC Standards
-W25Q_STATE W25Q_ReadSFDPRegister(u8_t *buf); 	///< Read device descriptor (SFDP Standard)
+W25Q_STATE W25Q_ReadID(uint8_t *buf);				///< Read chip ID
+W25Q_STATE W25Q_ReadFullID(uint8_t *buf);			///< Read full chip ID (Manufacturer ID + Device ID)
+W25Q_STATE W25Q_ReadUID(uint8_t *buf);				///< Read unique chip ID
+W25Q_STATE W25Q_ReadJEDECID(uint32_t *jedecID); 		///< Read ID by JEDEC Standards
+W25Q_STATE W25Q_ReadSFDPRegister(uint8_t *buf); 	///< Read device descriptor (SFDP Standard)
 
-W25Q_STATE W25Q_EraseSecurityRegisters(u8_t numReg);							///< Erase security register
-W25Q_STATE W25Q_ProgSecurityRegisters(u8_t *buf, u8_t numReg, u8_t byteAddr);	///< Program security register
-W25Q_STATE W25Q_ReadSecurityRegisters(u8_t *buf, u8_t numReg, u8_t byteAddr);	///< Read security register
+W25Q_STATE W25Q_EraseSecurityRegisters(uint8_t numReg);							///< Erase security register
+W25Q_STATE W25Q_ProgSecurityRegisters(uint8_t *buf, uint8_t numReg, uint8_t byteAddr);	///< Program security register
+W25Q_STATE W25Q_ReadSecurityRegisters(uint8_t *buf, uint8_t numReg, uint8_t byteAddr);	///< Read security register
 
-W25Q_STATE W25Q_BlockReadOnly(u32_t Addr, bool enable);			///< Individual block/sector read-only lock
-W25Q_STATE W25Q_BlockReadOnlyCheck(bool *state, u32_t Addr);	///< Check block's/sector's read-only lock status
+W25Q_STATE W25Q_BlockReadOnly(uint32_t Addr, bool enable);			///< Individual block/sector read-only lock
+W25Q_STATE W25Q_BlockReadOnlyCheck(bool *state, uint32_t Addr);	///< Check block's/sector's read-only lock status
 W25Q_STATE W25Q_GlobalReadOnly(bool enable);		///< Set read-only param to all chip
 
 W25Q_STATE W25Q_SwReset(bool force);	///< Software reset
-W25Q_STATE CSP_QSPI_EnableMemoryMappedMode(void);
+uint8_t CSP_QSPI_EnableMemoryMappedMode(void);
 uint8_t QSPI_AutoPollingMemReady(void);
 uint8_t QSPI_ResetChip(void);
 uint8_t QSPI_WriteEnable(void);
-W25Q_STATE CSP_QSPI_DisableMemoryMappedMode(void);
+uint8_t CSP_QSPI_DisableMemoryMappedMode(void);
 
 
 /**
