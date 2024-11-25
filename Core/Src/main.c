@@ -77,6 +77,7 @@ int main(void) {
   int bufferOffset;
   int i;
   clearMemoryStart = FALSE;
+  dataLoggingTest = FALSE;
 
   /* USER CODE END 1 */
 
@@ -106,7 +107,7 @@ int main(void) {
 
   //W25Q_EraseChip();
   //clearMemoryStart = TRUE;
-  dataLoggingTest = TRUE;
+  //dataLoggingTest = TRUE;
   __NOP();
   /* USER CODE END 2 */
 
@@ -134,7 +135,9 @@ int main(void) {
         address = 0;
         //for (i = 0; i < 4; i++)
         {
+          W25Q_WakeUP();
           W25Q_ReadRaw((testBuf+bufferOffset), 256, (address+bufferOffset));
+          W25Q_Sleep();
           //bufferOffset += MEM_PAGE_SIZE;
         }
       }

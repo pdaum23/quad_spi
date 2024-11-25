@@ -194,7 +194,7 @@ BOOL datalog_AddBaseTimeStampRecord(UINT32 secondsJan1970, UINT8 reason)
   // phil data.verLow=APPVERSION&0xFF;
 
   W25Q_WakeUP();
-  if (W25Q_ReadRaw((UINT8*)&data, sizeof(data), datalog_nextWriteLocation) == W25Q_OK)
+  if (W25Q_ProgramRaw((UINT8*)&data, sizeof(data), datalog_nextWriteLocation) == W25Q_OK)
   {
     passed = TRUE;
   }
@@ -244,7 +244,7 @@ BOOL datalog_AddGPSRecord(FLOAT32 latitude, FLOAT32 longitude, UINT8 satCount)
 
   W25Q_WakeUP();
   //passed=SPI_FLASH_PageWrite((UINT8*)&data, datalog_nextWriteLocation, sizeof(data));
-  if (W25Q_ReadRaw((UINT8*)&data, sizeof(data), datalog_nextWriteLocation) == W25Q_OK)
+  if (W25Q_ProgramRaw((UINT8*)&data, sizeof(data), datalog_nextWriteLocation) == W25Q_OK)
   {
     passed = TRUE;
   }
@@ -290,7 +290,7 @@ BOOL datalog_AddGPSAccuracyRecord(UINT16 hdop, UINT16 ehpe, UINT16 ehpeLimit, BO
   data.spare=0;
 
   W25Q_Sleep();
-  if (W25Q_ReadRaw((UINT8*)&data, sizeof(data), datalog_nextWriteLocation) == W25Q_OK)
+  if (W25Q_ProgramRaw((UINT8*)&data, sizeof(data), datalog_nextWriteLocation) == W25Q_OK)
   {
     passed = TRUE;
   }
@@ -347,7 +347,7 @@ BOOL datalog_AddMeasurementDCRecord(FLOAT32 value, UINT64 timeStamp, BOOL onPoin
   data.value=value;
 
   W25Q_WakeUP();
-  if (W25Q_ReadRaw((UINT8*)&data, sizeof(data), datalog_nextWriteLocation) == W25Q_OK)
+  if (W25Q_ProgramRaw((UINT8*)&data, sizeof(data), datalog_nextWriteLocation) == W25Q_OK)
   {
     passed = TRUE;
   }
@@ -404,7 +404,7 @@ BOOL datalog_AddMeasurementACRecord(FLOAT32 value, UINT64 timeStamp, BOOL onPoin
   data.value=value;
 
   W25Q_WakeUP();
-  if (W25Q_ReadRaw((UINT8*)&data, sizeof(data), datalog_nextWriteLocation) == W25Q_OK)
+  if (W25Q_ProgramRaw((UINT8*)&data, sizeof(data), datalog_nextWriteLocation) == W25Q_OK)
   {
     passed = TRUE;
   }
@@ -461,7 +461,7 @@ BOOL datalog_AddTemperatureRecord(FLOAT32 value, UINT64 timeStamp)
   data.value=value;
 
   W25Q_WakeUP();
-  if (W25Q_ReadRaw((UINT8*)&data, sizeof(data), datalog_nextWriteLocation) == W25Q_OK)
+  if (W25Q_ProgramRaw((UINT8*)&data, sizeof(data), datalog_nextWriteLocation) == W25Q_OK)
   {
     passed = TRUE;
   }
@@ -512,7 +512,7 @@ BOOL datalog_AddBatteryVoltsRecord(FLOAT32 value, UINT64 timeStamp)
   data.value=value;
 
   W25Q_WakeUP();
-  if (W25Q_ReadRaw((UINT8*)&data, sizeof(data), datalog_nextWriteLocation) == W25Q_OK)
+  if (W25Q_ProgramRaw((UINT8*)&data, sizeof(data), datalog_nextWriteLocation) == W25Q_OK)
   {
     passed = TRUE;
   }
@@ -580,7 +580,7 @@ BOOL datalog_AddNotesRecord(void)
     memPtr+=7;
 
     W25Q_WakeUP();
-    if (W25Q_ReadRaw((UINT8*)&data, sizeof(data), datalog_nextWriteLocation) == W25Q_OK)
+    if (W25Q_ProgramRaw((UINT8*)&data, sizeof(data), datalog_nextWriteLocation) == W25Q_OK)
     {
       passed = TRUE;
     }
