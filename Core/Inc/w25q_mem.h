@@ -37,6 +37,7 @@ extern "C" {
 #define MEM_FLASH_SIZE 512U 	// 256 MB-bit
 /// Mem big block size in KB
 #define MEM_BLOCK_SIZE 64U		// 64 KB: 256 pages
+#define MEM_BLOCK_SIZE_64K MEM_BLOCK_SIZE * 1024  // Actual size of 64K memory block
 /// Mem small block size in KB
 #define MEM_SBLOCK_SIZE 32U		// 32 KB: 128 pages
 /// Mem sector size in KB

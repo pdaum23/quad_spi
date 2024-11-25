@@ -1,20 +1,20 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2024 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.c
+ * @brief          : Main program body
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2024 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -61,29 +61,23 @@ void SystemClock_Config(void);
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
-int main(void)
-{
+ * @brief  The application entry point.
+ * @retval int
+ */
+int main(void) {
 
   /* USER CODE BEGIN 1 */
-  //int i;
-  uint8_t testBuf[256];
-  // make test data
-  uint8_t byte = 0x65;
-  uint8_t byte_read = 0;
-  uint8_t in_page_shift = 0;
-  uint8_t page_number = 0;
-  //uint8_t testData[2] = {0xAA, 0x55};
-  //uint8_t testDataRead[2] = {0x00, 0x00};
-  // make example structure
-  struct STR {
-    uint8_t abc;
-    uint32_t bca;
-    char str[4];
-    float gg;
-  } _str, _str2;
+  BOOL clearMemoryStart;
+  BOOL clearDatalogFailure;
+  BOOL dataLoggingTest;
+  BOOL dataLoggingTimeStampRecorded;
+  UINT8 clearDatalogPercentDone;
+  uint8_t testBuf[1024];
+  UINT32 address;
+  int bufferOffset;
+  int i;
+  clearMemoryStart = FALSE;
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -109,95 +103,65 @@ int main(void)
   /* USER CODE BEGIN 2 */
   W25Q_Init();		 // init the chip
   datalog_Initialize();
-  W25Q_EraseSector(0); // Erase sector 0 for write read test
-
-  // read data
-  W25Q_ReadByte(&byte_read, in_page_shift, page_number);
-  // write data
-  W25Q_ProgramByte(byte, in_page_shift, page_number);
-  W25Q_ReadByte(&byte_read, in_page_shift, page_number);
-
-  //W25Q_ProgramData(testData, 2, in_page_shift, ++page_number);
-  //W25Q_ReadData(testDataRead, 2, in_page_shift, page_number);
-  // fill instance
-  _str.abc = 0x20;
-  _str.bca = 0x3F3F4A;
-  _str.str[0] = 'a';
-  _str.str[1] = 'b';
-  _str.str[2] = 'c';
-  _str.str[3] = '\0';
-  _str.gg = 0.658;
-
-  u16_t len = sizeof(_str); // length of structure in bytes
-
-  // program structure
-  W25Q_ProgramData((u8_t*) &_str, len, ++in_page_shift, page_number);
-  // read structure to another instance
-  W25Q_ReadData((u8_t*) &_str2, len, in_page_shift, page_number);
-
-  W25Q_ReadRaw(testBuf, 256, page_number*MEM_PAGE_SIZE);
-  page_number++;
-  W25Q_ReadRaw(testBuf, 256, page_number*MEM_PAGE_SIZE);
-  memset(testBuf, 0xAA, 256);
-  W25Q_ProgramRaw(testBuf, 256, page_number*MEM_PAGE_SIZE);
-  memset(testBuf, 0x55, 256);
-  W25Q_ReadRaw(testBuf, 256, page_number*MEM_PAGE_SIZE);
-  memset(testBuf, 0x55, 256);
-  page_number++;
-  W25Q_ReadRaw(testBuf, 256, page_number*MEM_PAGE_SIZE);
-  page_number = 0;
-  memset(testBuf, 0x55, 256);
-  W25Q_ReadRaw(testBuf, 256, page_number*MEM_PAGE_SIZE);
-  QSPI_AutoPollingMemReady();
-  CSP_QSPI_EnableMemoryMappedMode();
-  memset(testBuf, 0x55, 256);
-  memcpy(testBuf, (uint8_t *) 0x90000000, 256);
-  CSP_QSPI_DisableMemoryMappedMode();
-  memset(testBuf, 0x55, 256);
-  W25Q_ReadRaw(testBuf, 256, page_number*MEM_PAGE_SIZE);
-  QSPI_AutoPollingMemReady();
-  CSP_QSPI_EnableMemoryMappedMode();
-  memset(testBuf, 0x55, 256);
-  memcpy(testBuf, (uint8_t *) 0x90000000, 256);
-  CSP_QSPI_DisableMemoryMappedMode();
-  memset(testBuf, 0x55, 256);
-  W25Q_ReadRaw(testBuf, 256, page_number*MEM_PAGE_SIZE);
 
   //W25Q_EraseChip();
-
+  //clearMemoryStart = TRUE;
+  dataLoggingTest = TRUE;
   __NOP();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (1)
-  {
+  while (1) {
     /* USER CODE END WHILE */
-
+    if (clearMemoryStart == TRUE) {
+      clearMemoryStart = FALSE;
+      datalog_ClearMemoryStart();
+    }
+    datalog_ClearMemoryIteration();
+    if (datalog_ClearMemoryBusy(&clearDatalogPercentDone,
+        &clearDatalogFailure)) {
+      if (clearDatalogFailure) {
+        HAL_Delay(10);
+      } else {
+        HAL_Delay(1);
+      }
+    } else {
+      if (dataLoggingTest == TRUE) {
+        datalog_AddMeasurementDCRecord(3.14, 1732493344000, TRUE, FALSE, FALSE);
+        HAL_Delay(1000);
+        bufferOffset = 0;
+        address = 0;
+        //for (i = 0; i < 4; i++)
+        {
+          W25Q_ReadRaw((testBuf+bufferOffset), 256, (address+bufferOffset));
+          //bufferOffset += MEM_PAGE_SIZE;
+        }
+      }
+      __NOP();
+    }
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
-void SystemClock_Config(void)
-{
-  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
-  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+ * @brief System Clock Configuration
+ * @retval None
+ */
+void SystemClock_Config(void) {
+  RCC_OscInitTypeDef RCC_OscInitStruct = { 0 };
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = { 0 };
 
   /** Configure the main internal regulator output voltage
-  */
-  if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK)
-  {
+   */
+  if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK) {
     Error_Handler();
   }
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+   * in the RCC_OscInitTypeDef structure.
+   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
@@ -208,22 +172,20 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV7;
   RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
   RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV8;
-  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
-  {
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK) {
     Error_Handler();
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK
+      | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
-  {
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK) {
     Error_Handler();
   }
 }
@@ -233,16 +195,14 @@ void SystemClock_Config(void)
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
-void Error_Handler(void)
-{
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
+void Error_Handler(void) {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
-  while (1)
-  {
+  while (1) {
   }
   /* USER CODE END Error_Handler_Debug */
 }

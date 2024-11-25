@@ -52,7 +52,7 @@ volatile UINT32 datalog_nextWriteLocation;
 UINT32 datalog_flashSize;
 
 BOOL datalog_clearMemBusy;
-UINT32 datalog_clearMemAddress;
+UINT32 datalog_clearBlockNumber;
 BOOL datalog_clearMemFailure;
 
 UINT32 datalog_lastTimeStampSecond;
@@ -614,7 +614,7 @@ BOOL datalog_ClearMemoryStart(void)
 {
   W25Q_WakeUP();
   datalog_clearMemFailure=FALSE;
-  datalog_clearMemAddress=0;
+  datalog_clearBlockNumber=0;
   datalog_clearMemBusy=TRUE;
   return TRUE;
 }
@@ -623,35 +623,45 @@ BOOL datalog_ClearMemoryIteration(void)
 {
   if (datalog_clearMemBusy)
   {
-    if (datalog_clearMemAddress<datalog_flashSize)
+    if (datalog_clearBlockNumber<BLOCK_COUNT)
     {
       //EventLog(CLASS_INFO,PRI_SYSTEM,"Erasing DF 64K block at address 0x%08X",datalog_clearMemAddress);
       W25Q_WakeUP();
-      if (W25Q_EraseBlock(datalog_clearMemAddress, 64) != W25Q_OK)
+      if (W25Q_EraseBlock(datalog_clearBlockNumber, 64) != W25Q_OK)
       {
         datalog_clearMemFailure=TRUE;
       }
       //if (!SPI_FLASH_SectorErase(datalog_clearMemAddress, SPI_FLASH_SECTOR_64K)) datalog_clearMemFailure=TRUE;
       W25Q_Sleep();
-      if (!datalog_clearMemAddress)
+      if (!datalog_clearBlockNumber)
       {
         datalog_nextWriteLocation=0; //Reset write pointer on first sector erase
         datalog_AddNotesRecord(); //Save a base time stamp and notes at the beginning
       }
-      datalog_clearMemAddress+=64*1024UL;
+      datalog_clearBlockNumber++;
       return TRUE;
     }
-    if (!datalog_Initialize()) datalog_clearMemFailure=TRUE;
+    if (!datalog_Initialize())
+      {
+        datalog_clearMemFailure=TRUE;
+      }
   }
   return FALSE;
 }
 
 BOOL datalog_ClearMemoryBusy(UINT8 *percentDone, BOOL *failure)
 {
+  UINT8 percent;
+  UINT32 num, den;
+  float ratio;
+  num = datalog_clearBlockNumber*1024*MEM_BLOCK_SIZE;
+  den = datalog_flashSize+1;
+  ratio = ((float)num/(float)den);
+  percent = ratio*100;
   if (failure) *failure=datalog_clearMemFailure;
   if (datalog_clearMemBusy)
   {
-    if (percentDone) *percentDone=datalog_clearMemAddress*100/(datalog_flashSize+1);
+    if (percentDone) *percentDone=percent;
     return TRUE;
   }
   if (percentDone) *percentDone=100;
