@@ -105,6 +105,7 @@ W25Q_STATE W25Q_ReadSLong(int32_t *buf, uint8_t pageShift, uint32_t pageNum);			
 W25Q_STATE W25Q_ReadLong(uint32_t *buf, uint8_t pageShift, uint32_t pageNum);			///< Read 32-bit variable
 W25Q_STATE W25Q_ReadData(uint8_t *buf, uint16_t len, uint8_t pageShift, uint32_t pageNum);  ///< Read any 8-bit data
 W25Q_STATE W25Q_ReadRaw(uint8_t *buf, uint16_t data_len, uint32_t rawAddr);				///< Read data from raw addr
+W25Q_STATE W25Q_ReadRawSpi(uint8_t *buf, uint16_t data_len, uint32_t rawAddr);       ///< Read data from raw addr using SPI
 W25Q_STATE W25Q_SingleRead(uint8_t *buf, uint32_t len, uint32_t Addr);					///< Read data from raw addr by single line
 
 W25Q_STATE W25Q_EraseSector(uint32_t SectAddr);			///< Erase 4KB Sector

@@ -129,7 +129,7 @@ int main(void) {
       }
     } else {
       if (dataLoggingTest == TRUE) {
-        datalog_AddMeasurementDCRecord(3.14, 1732493344000, TRUE, FALSE, FALSE);
+        //datalog_AddMeasurementDCRecord(3.14, 1732493344000, TRUE, FALSE, FALSE);
         HAL_Delay(1000);
         bufferOffset = 0;
         address = 0;

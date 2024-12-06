@@ -531,6 +531,60 @@ W25Q_STATE W25Q_ReadRaw(uint8_t *buf, uint16_t data_len, uint32_t rawAddr) {
 
 /**
  * @brief W25Q Read any 8-bit data from raw addr
+ * Read any 8-bit data from preffered chip address
+ *
+ * @note Address is in [byte] size
+ * @note Be carefull with page overrun
+ * @param[out] buf Pointer to data to be written (single or array)
+ * @param[in] data_len Length of data (1..256)
+ * @param[in] rawAddr Start address of chip's cell
+ * @return W25Q_STATE enum
+ */
+W25Q_STATE W25Q_ReadRawSpi(uint8_t *buf, uint16_t data_len, uint32_t rawAddr) {
+  if (data_len > 256 || data_len == 0)
+    return W25Q_PARAM_ERR;
+
+  while (W25Q_IsBusy() == W25Q_BUSY)
+    w25q_delay(1);
+
+  QSPI_CommandTypeDef com;
+
+  com.InstructionMode = QSPI_INSTRUCTION_1_LINE; // QSPI_INSTRUCTION_...
+#if MEM_FLASH_SIZE > 128U
+  com.Instruction = W25Q_READ_DATA;   // Command
+  com.AddressSize = QSPI_ADDRESS_32_BITS;
+#else
+    com.Instruction = W25Q_FAST_READ_QUAD_IO;  // Command
+    com.AddressSize = QSPI_ADDRESS_24_BITS;
+  #endif
+  com.AddressMode = QSPI_ADDRESS_4_LINES;
+
+  com.Address = rawAddr;
+
+  com.AlternateByteMode = QSPI_ALTERNATE_BYTES_NONE;
+  com.AlternateBytes = QSPI_ALTERNATE_BYTES_NONE;
+  com.AlternateBytesSize = QSPI_ALTERNATE_BYTES_NONE;
+
+  com.DummyCycles = 0;
+  com.DataMode = QSPI_DATA_1_LINE;
+  com.NbData = data_len;
+
+  com.DdrMode = QSPI_DDR_MODE_DISABLE;
+  com.DdrHoldHalfCycle = QSPI_DDR_HHC_ANALOG_DELAY;
+  com.SIOOMode = QSPI_SIOO_INST_EVERY_CMD;
+
+  if (HAL_QSPI_Command(&hqspi, &com, HAL_QSPI_TIMEOUT_DEFAULT_VALUE)
+      != HAL_OK)
+    return W25Q_SPI_ERR;
+
+  if (HAL_QSPI_Receive(&hqspi, buf, HAL_QSPI_TIMEOUT_DEFAULT_VALUE) != HAL_OK)
+    return W25Q_SPI_ERR;
+
+  return W25Q_OK;
+}
+
+/**
+ * @brief W25Q Read any 8-bit data from raw addr
  * Read any 8-bit data from preffered chip address by SINGLE SPI
  *
  * @note Works only with SINGLE SPI Line

@@ -47,94 +47,82 @@ typedef double FLOAT64;
 
 #define TRUE 0x01
 #define FALSE 0x00
-typedef enum
-{
-  E_DATALOG_TIMESTAMP, //0
-  E_DATALOG_GPS, //1
-  E_DATALOG_READINGDC, //2
-  E_DATALOG_READINGAC, //3
-  E_DATALOG_TEMPERATURE, //4
-  E_DATALOG_BATTERYVOLTS, //5
-  E_DATALOG_NOTES, //6
-  E_DATALOG_READINGDCFAST, //7
-  E_DATALOG_GPSACCURACY, //8
-  E_DATALOG_INTREADINGDC, //9
-  E_DATALOG_INTREADINGAC, //10
-} T_DATALOG_RECORDTYPES;
+
+#define DATALOG_RECORD_TYPE_HEADER 0
+#define DATALOG_RECORD_TYPE_WAVEFORM 1
+#define DATALOG_RECORD_TYPE_DATALOG 2
+#define DATALOG_RECORD_TYPE_GPSDATA 3
+
+#define DATALOG_HEADER_FLAGS_DIGITALFILTER  0x00000001
+#define DATALOG_HEADER_FLAGS_NOGPS  0x00000002
+#define DATALOG_HEADER_FLAGS_EXTENDEDHIZ  0x00000004
+#define DATALOG_HEADER_FLAGS_ONFIRST  0x00000008
+
+#define FIRMWARE_APP_MAXSIZE    0x00077E00 /* Application maximum size (512)*/
+#define FIRMWARE_FLASH_END      0x0007FFFF /* Last available address in flash (512K) */
+/* 512KB Blank memory reserved for future use */
+#define RESERVED_BLANK_BLOCK (512*1024)
+/* First available address in flash */
+#define DATALOG_NORMAL_FLASH_START (FIRMWARE_FLASH_END+RESERVED_BLANK_BLOCK+1)
+/* 1024KB reserved for normal speed sampling data */
+#define DATALOG_NORMAL_FLASH_BYTES (1024*1024)
+/* 2048KB */
+#define DATALOG_NORMAL_FLASH_END (DATALOG_NORMAL_FLASH_START+DATALOG_NORMAL_FLASH_BYTES)
 
 #pragma pack(1)
-#define DATALOG_TIME_REASON_OFFSET 0
-#define DATALOG_TIME_REASON_INIT  1
-#define DATALOG_TIME_REASON_CABLEINSERTED 2
-#define DATALOG_TIME_REASON_CABLEREMOVED 3
-#define DATALOG_TIME_REASON_GPS 4
-#define DATALOG_TIME_REASON_LOWBAT 5
-#define DATALOG_TIME_REASON_NOTES 6
-#define DATALOG_TIME_REASON_MEMFULL 7
-#define DATALOG_TIME_REASON_WAITSTART 8
-
-#define DATALOG_OPTIONS_RANGELOW 0x00
-#define DATALOG_OPTIONS_RANGEMED 0x01
-#define DATALOG_OPTIONS_RANGEHI 0x02
-typedef struct
-{
-  UINT8 recordType; /* D7-D5=record specific flags, D4-D0=record type(0)  */
-  UINT32 seconds; /* Seconds from Jan 1, 1970, unix time format */
-  UINT8 reason; /* Reason why timestamp record was inserted */
-  UINT8 optionsVerHigh; /* Pertinent config options, D1-D0=range, D2,D3=spare, D4-D7=version high nibble*/
-  UINT8 verLow; /* Low version bytes */
-} T_DATALOG_TIME_RECORD;
 
 typedef struct
 {
-  UINT8 recordType; /* D7-D5=record specific flags, D4-D0=record type(1)  */
-  UINT8 latitude[3]; /* 3-byte fixed point encoded latitude */
-  UINT8 longitude[3]; /* 3-byte fixed point encoded longitude */
-  UINT8 satCount; /* Number of satellites in fix */
-} T_DATALOG_GPS_RECORD;
+  UINT8 type;
+  UINT32 signature;
+  UINT8 fileType;
+  UINT16 firmware;
+  UINT8 recordVersion;
+  UINT32 stationSeries;
+  UINT32 chainage;
+  UINT64 fileStartDate;
+  UINT16 offDuration;
+  UINT16 cycleDuration;
+  UINT16 wavePrintInterval;
+  UINT8 meterRange;
+  UINT16 onOffset;
+  UINT16 offOffset;
+  INT32 latitude;
+  INT32 longitude;
+  UINT16 altitude;
+  char notes[256];
+  UINT32 serialNum;
+  UINT32 flags;
+  UINT32 utcOffset;
+  UINT16 spiFirmware;
+  UINT8 gpsType;
+  char pad[195];
+} T_DATALOG_HEADER;
 
-#define DATALOG_GPSACCURACY_FLAG_EHPE_LIM_ENABLED 0x20
-#define DATALOG_GPSACCURACY_FLAG_EHPE_LIM_TIMEOUT 0x40
 typedef struct
 {
-  UINT8 recordType; /* D7-D5=record specific flags, D4-D0=record type(8)  */
-  UINT16 hdop; /* fixed point 0.1m resolution */
-  UINT16 ehpe; /* fixed point 0.1m resolution */
-  UINT16 ehpeLimit; /* fixed point 0.1m resolution */
-  UINT8 spare; /* future use */
-} T_DATALOG_GPSACCURACY_RECORD;
+  UINT8 type;
+  UINT64 timeMilliseconds;
+  INT32 acValue;
+  INT32 dcValue;
 
+} T_DATALOG_DATAPOINT;
 
-#define DATALOG_READING_FLAG_ON 0x80
-#define DATALOG_READING_FLAG_FAHRENHEIT 0x40
-#define DATALOG_READING_FLAG_AMPS 0x40
-#define DATALOG_READING_FLAG_TIMELOCK 0x20
 typedef struct
 {
-  UINT8 recordType; /* D7-D5=record specific flags, D4-D0=record type(2-5,7)  */
-  UINT8 timeOffsetMs[3]; /* 3-byte time offset from last timestamp record */
-  FLOAT32 value; /* reading value */
-} T_DATALOG_READING_RECORD;
-
-#define DATALOG_NOTES_FLAG_START 0x80
-#define DATALOG_NOTES_FLAG_END 0x40
-typedef struct
-{
-  UINT8 recordType; /* D7-D5=record specific flags, D4-D0=record type(6)  */
-  UINT8 notes[7];
-} T_DATALOG_NOTES_RECORD;
+  UINT8 type;
+  UINT64 timeMilliseconds;
+  INT32 latitude;
+  INT32 longitude;
+  UINT16 altitude;
+  UINT8 satsVisible;
+  UINT8 satsSolution;
+  UINT8 solutionValid;
+} T_DATALOG_GPSPOINT;
 
 #pragma pack()
 
 BOOL datalog_Initialize( void );
-BOOL datalog_AddBaseTimeStampRecord(UINT32 secondsJan1970, UINT8 reason);
-BOOL datalog_AddMeasurementDCRecord(FLOAT32 value, UINT64 timeStamp, BOOL onPoint, BOOL intTracking, BOOL fastSample);
-BOOL datalog_AddMeasurementACRecord(FLOAT32 value, UINT64 timeStamp, BOOL onPoint, BOOL intTracking);
-BOOL datalog_AddTemperatureRecord(FLOAT32 value, UINT64 timeStamp);
-BOOL datalog_AddBatteryVoltsRecord(FLOAT32 value, UINT64 timeStamp);
-BOOL datalog_AddGPSRecord(FLOAT32 latitude, FLOAT32 longitude, UINT8 satCount);
-BOOL datalog_AddGPSAccuracyRecord(UINT16 hdop, UINT16 ehpe, UINT16 ehpeLimit, BOOL ehpeLimEnabled, BOOL ehpeLimTimeoutExpired);
-BOOL datalog_AddNotesRecord(void);
 BOOL datalog_ResetMemory(void);
 BOOL datalog_IsFull(void);
 BOOL datalog_IsEmpty(void);
@@ -142,6 +130,6 @@ BOOL datalog_ClearMemoryStart(void);
 BOOL datalog_ClearMemoryIteration(void);
 BOOL datalog_ClearMemoryBusy(UINT8 *percentDone, BOOL *failure);
 void datalog_GetStorageInfo(UINT32 *bytesUsed, UINT32 *bytesTotal);
-BOOL datalog_CheckFixNextWriteLocationIsBlank(void);
+BOOL datalog_CheckFixNextWriteLocationIsBlank(UINT8 recordType);
 
 #endif
