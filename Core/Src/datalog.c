@@ -246,16 +246,16 @@ void datalog_GetStorageInfo(UINT32 *bytesUsed, UINT32 *bytesTotal)
   if (bytesUsed) *bytesUsed=datalog_nextWriteLocation;
   if (bytesTotal) *bytesTotal=datalog_flashSize;
 }
-#define DATALOG_RECORD_TYPE_HEADER 0
-#define DATALOG_RECORD_TYPE_WAVEFORM 1
-#define DATALOG_RECORD_TYPE_DATALOG 2
-#define DATALOG_RECORD_TYPE_GPSDATA 3
+
+
 BOOL datalog_CheckFixNextWriteLocationIsBlank(UINT8 recordType)
 { //Checks the next write location in dataflash to ensure it is blank.  If not,
-  //the 8-byte dataslot is written with zeros and the next write location is
+  //the header or dataslot is written with zeros and the next write location is
   //tested until a blank location is found.
-  volatile BOOL passed;
-  UINT8 buffer[8];
+  BOOL onPageBoundary;
+  UINT16 bytesToNextPage;
+
+  UINT8 buffer[256];
   UINT8 buffer17FF[17]={0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
   UINT8 buffer22FF[22]={0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,
                       0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
@@ -297,33 +297,98 @@ BOOL datalog_CheckFixNextWriteLocationIsBlank(UINT8 recordType)
 
 
   W25Q_WakeUP();
-
+  onPageBoundary = FALSE;
   while (datalog_nextWriteLocation<datalog_flashSize)
   {
-
-    //SPI_FLASH_BufferRead(buffer, datalog_nextWriteLocation, 8);
-    W25Q_ReadRawSpi(buffer, 8, datalog_nextWriteLocation);
-    if (!memcmp(buffer,buffer17FF,8))
-    {
-      W25Q_Sleep();
-      return TRUE;
+    if (recordType == DATALOG_RECORD_TYPE_HEADER)
+    { // Move to next page boundary then start checking.
+      if (onPageBoundary == FALSE)
+      {
+        bytesToNextPage = datalog_nextWriteLocation % MEM_PAGE_SIZE;
+        datalog_nextWriteLocation += bytesToNextPage;
+        onPageBoundary = TRUE;
+      }
+      W25Q_ReadRawSpi(buffer, 256, datalog_nextWriteLocation);
+      if (!memcmp(buffer,buffer256FF,256))
+      {
+        W25Q_Sleep();
+        return TRUE; //Page is blank can put header here.
+      }
+      else
+      {
+        W25Q_ProgramRaw(buffer25600, 256, datalog_nextWriteLocation);
+        datalog_nextWriteLocation+=DATALOG_HEADER_CHECK_SIZE; // Check next page.
+      }
     }
-    //EventLog(CLASS_ERROR,PRI_SYSTEM,"Dataflash not blank when it should be at address 0x%08X",datalog_nextWriteLocation);
-    //fault_Set(FAULT_DATAFLASH_FF); //Memory was not blank when it should have been
-    //passed=SPI_FLASH_PageWrite((UINT8*)&buffer00, datalog_nextWriteLocation, 8); //Blank out location
-    W25Q_WakeUP();
-    if (W25Q_ReadRawSpi((UINT8*)&buffer1700, 8, datalog_nextWriteLocation) == W25Q_OK)
+    else if (recordType == DATALOG_RECORD_TYPE_DATALOG)
     {
-      passed = TRUE;
+      bytesToNextPage = datalog_nextWriteLocation % MEM_PAGE_SIZE;
+      if (bytesToNextPage < DATALOG_DATAPOINT_SIZE) // Crossing page boundary
+      {
+        W25Q_ReadRawSpi(buffer, bytesToNextPage, datalog_nextWriteLocation);
+        W25Q_ReadRawSpi((buffer+bytesToNextPage), (DATALOG_DATAPOINT_SIZE-bytesToNextPage), (datalog_nextWriteLocation+bytesToNextPage));
+        if (!memcmp(buffer,buffer17FF,DATALOG_DATAPOINT_SIZE))
+        {
+          W25Q_Sleep();
+          return TRUE; //Page is blank can put header here.
+        }
+        else
+        {
+          W25Q_ProgramRaw(buffer1700, bytesToNextPage, datalog_nextWriteLocation);
+          W25Q_ProgramRaw(buffer1700, (DATALOG_DATAPOINT_SIZE-bytesToNextPage), (datalog_nextWriteLocation+bytesToNextPage));
+          datalog_nextWriteLocation += DATALOG_DATAPOINT_SIZE; //Check next slot
+        }
+      }
+      else
+      {
+        W25Q_ReadRawSpi(buffer, DATALOG_DATAPOINT_SIZE, datalog_nextWriteLocation);
+        if (!memcmp(buffer,buffer17FF,DATALOG_DATAPOINT_SIZE))
+        {
+          W25Q_Sleep();
+          return TRUE; //Page is blank can put header here.
+        }
+        else
+        {
+          W25Q_ProgramRaw(buffer1700, DATALOG_DATAPOINT_SIZE, datalog_nextWriteLocation);
+          datalog_nextWriteLocation += DATALOG_DATAPOINT_SIZE; //Check next slot
+        }
+      }
     }
-    else
+    else if (recordType == DATALOG_RECORD_TYPE_GPSDATA)
     {
-      passed = FALSE;
+      bytesToNextPage = datalog_nextWriteLocation % MEM_PAGE_SIZE;
+      if (bytesToNextPage < DATALOG_GPSPOINT_SIZE) // Crossing page boundary
+      {
+        W25Q_ReadRawSpi(buffer, bytesToNextPage, datalog_nextWriteLocation);
+        W25Q_ReadRawSpi((buffer+bytesToNextPage), (DATALOG_GPSPOINT_SIZE-bytesToNextPage), (datalog_nextWriteLocation+bytesToNextPage));
+        if (!memcmp(buffer,buffer22FF,DATALOG_GPSPOINT_SIZE))
+        {
+          W25Q_Sleep();
+          return TRUE; //Page is blank can put header here.
+        }
+        else
+        {
+          W25Q_ProgramRaw(buffer2200, bytesToNextPage, datalog_nextWriteLocation);
+          W25Q_ProgramRaw(buffer2200, (DATALOG_GPSPOINT_SIZE-bytesToNextPage), (datalog_nextWriteLocation+bytesToNextPage));
+          datalog_nextWriteLocation += DATALOG_GPSPOINT_SIZE; //Check next slot
+        }
+      }
+      else
+      {
+        W25Q_ReadRawSpi(buffer, DATALOG_GPSPOINT_SIZE, datalog_nextWriteLocation);
+        if (!memcmp(buffer,buffer22FF,DATALOG_GPSPOINT_SIZE))
+        {
+          W25Q_Sleep();
+          return TRUE; //Page is blank can put header here.
+        }
+        else
+        {
+          W25Q_ProgramRaw(buffer2200, DATALOG_GPSPOINT_SIZE, datalog_nextWriteLocation);
+          datalog_nextWriteLocation += DATALOG_GPSPOINT_SIZE; //Check next slot
+        }
+      }
     }
-    W25Q_Sleep();
-    datalog_nextWriteLocation+=8; //Check next slot
   }
-
   W25Q_Sleep();
   return FALSE; //Out of memory
 }
