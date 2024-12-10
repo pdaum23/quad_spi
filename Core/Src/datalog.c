@@ -62,12 +62,12 @@ UINT32 datalog_datapointCount;
 UINT32 datalog_samplesLostCount;
 UINT8 datalog_sampleLost;
 
-#define DATALOG_SDLQUEUE_SIZE 100
-T_DATALOG_DATAPOINT datalog_sdlqueue[DATALOG_SDLQUEUE_SIZE];
-UINT8 datalog_sdlqueueOnTag[DATALOG_SDLQUEUE_SIZE];
-UINT8 datalog_sdlqueuePut;
-UINT8 datalog_sdlqueueGet;
-UINT8 datalog_sdlqueueCount;
+#define DATALOG_BMMQUEUE_SIZE 100
+T_DATALOG_DATAPOINT datalog_bmmqueue[DATALOG_BMMQUEUE_SIZE];
+UINT8 datalog_bmmqueueOnTag[DATALOG_BMMQUEUE_SIZE];
+UINT8 datalog_bmmqueuePut;
+UINT8 datalog_bmmqueueGet;
+UINT8 datalog_bmmqueueCount;
 
 #define DATALOG_FASTQUEUE_SIZE 50
 T_DATALOG_DATAPOINT datalog_fastqueue[DATALOG_FASTQUEUE_SIZE];
@@ -105,9 +105,9 @@ BOOL datalog_Initialize( void )
 
   datalog_clearMemBusy=FALSE;
   datalog_lastTimeStampSecond=0;
-  datalog_sdlqueuePut=0;
-  datalog_sdlqueueGet=0;
-  datalog_sdlqueueCount=0;
+  datalog_bmmqueuePut=0;
+  datalog_bmmqueueGet=0;
+  datalog_bmmqueueCount=0;
   datalog_fastqueuePut=0;
   datalog_fastqueueGet=0;
   datalog_fastqueueCount=0;
@@ -391,4 +391,50 @@ BOOL datalog_CheckFixNextWriteLocationIsBlank(UINT8 recordType)
   }
   W25Q_Sleep();
   return FALSE; //Out of memory
+}
+
+void datalog_CreateNewHeader(void)
+{
+  T_DATALOG_HEADER dataHeader;
+
+  datalog_bmmqueuePut=0;
+  datalog_bmmqueueGet=0;
+  datalog_bmmqueueCount=0;
+  datalog_fastqueuePut=0;
+  datalog_fastqueueGet=0;
+  datalog_fastqueueCount=0;
+
+  //Write out the file headers
+  dataHeader.type=DATALOG_RECORD_TYPE_HEADER;
+  dataHeader.signature=0xF0615D82; // Change this is SPI
+  dataHeader.fileType=DATALOG_RECORD_TYPE_DATALOG;
+  dataHeader.firmware=0;
+  dataHeader.recordVersion=0;
+  dataHeader.stationSeries=0;
+  dataHeader.chainage=0;
+  dataHeader.fileStartDate=0; //timer_GetMillisecondTime();
+  dataHeader.offDuration=0;
+  dataHeader.cycleDuration=0;
+  dataHeader.wavePrintInterval=0;
+  dataHeader.meterRange=0;
+  dataHeader.latitude=0; //gpsData.latitude;
+  dataHeader.longitude=0; //gpsData.longitude;
+  dataHeader.altitude=0; //(UINT32)(gpsData.altitude/100);
+  dataHeader.onOffset=0;
+  dataHeader.offOffset=0;
+  memset(dataHeader.notes,0,256);
+  dataHeader.serialNum=0;
+  dataHeader.flags=0;
+  dataHeader.utcOffset=0;
+  dataHeader.bmmFirmware=0;
+  dataHeader.gpsType=0;
+
+  datalog_CheckFixNextWriteLocationIsBlank(DATALOG_RECORD_TYPE_HEADER);
+
+  W25Q_WakeUP();
+  W25Q_ProgramRaw((UINT8 *)&dataHeader, 256, datalog_nextWriteLocation);
+  datalog_nextWriteLocation+=256;
+  W25Q_ProgramRaw((UINT8 *)(&dataHeader+256), 256, datalog_nextWriteLocation);
+  datalog_nextWriteLocation+=256;
+  W25Q_Sleep();
 }
