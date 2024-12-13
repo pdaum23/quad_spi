@@ -330,7 +330,7 @@ BOOL datalog_CheckFixNextWriteLocationIsBlank(UINT8 recordType)
         if (!memcmp(buffer,buffer17FF,DATALOG_DATAPOINT_SIZE))
         {
           W25Q_Sleep();
-          return TRUE; //Page is blank can put header here.
+          return TRUE; //DATALOG_DATAPOINT_SIZE bytes blank can put data point here.
         }
         else
         {
@@ -345,7 +345,7 @@ BOOL datalog_CheckFixNextWriteLocationIsBlank(UINT8 recordType)
         if (!memcmp(buffer,buffer17FF,DATALOG_DATAPOINT_SIZE))
         {
           W25Q_Sleep();
-          return TRUE; //Page is blank can put header here.
+          return TRUE; //DATALOG_DATAPOINT_SIZE bytes blank can put data point here.
         }
         else
         {
@@ -364,7 +364,7 @@ BOOL datalog_CheckFixNextWriteLocationIsBlank(UINT8 recordType)
         if (!memcmp(buffer,buffer22FF,DATALOG_GPSPOINT_SIZE))
         {
           W25Q_Sleep();
-          return TRUE; //Page is blank can put header here.
+          return TRUE; //DATALOG_GPSPOINT_SIZE bytes blank can put GPS data here.
         }
         else
         {
@@ -379,7 +379,7 @@ BOOL datalog_CheckFixNextWriteLocationIsBlank(UINT8 recordType)
         if (!memcmp(buffer,buffer22FF,DATALOG_GPSPOINT_SIZE))
         {
           W25Q_Sleep();
-          return TRUE; //Page is blank can put header here.
+          return TRUE; //DATALOG_GPSPOINT_SIZE bytes blank can put GPS data here.
         }
         else
         {
@@ -393,7 +393,7 @@ BOOL datalog_CheckFixNextWriteLocationIsBlank(UINT8 recordType)
   return FALSE; //Out of memory
 }
 
-void datalog_CreateNewHeader(void)
+BOOL datalog_CreateNewHeader(void)
 {
   T_DATALOG_HEADER dataHeader;
 
@@ -432,9 +432,50 @@ void datalog_CreateNewHeader(void)
   datalog_CheckFixNextWriteLocationIsBlank(DATALOG_RECORD_TYPE_HEADER);
 
   W25Q_WakeUP();
-  W25Q_ProgramRaw((UINT8 *)&dataHeader, 256, datalog_nextWriteLocation);
+  if (W25Q_ProgramRaw((UINT8 *)&dataHeader, 256, datalog_nextWriteLocation) != W25Q_OK)
+  {
+    W25Q_Sleep();
+    return FALSE;
+  }
   datalog_nextWriteLocation+=256;
-  W25Q_ProgramRaw((UINT8 *)(&dataHeader+256), 256, datalog_nextWriteLocation);
+  if (W25Q_ProgramRaw((UINT8 *)(&dataHeader+256), 256, datalog_nextWriteLocation) != W25Q_OK)
+  {
+    W25Q_Sleep();
+    return FALSE;
+  }
   datalog_nextWriteLocation+=256;
   W25Q_Sleep();
+  return TRUE;
+}
+
+BOOL datalog_AddDataPointRecord(T_DATALOG_DATAPOINT dataPoint)
+{
+  UINT16 bytesToNextPage;
+  datalog_CheckFixNextWriteLocationIsBlank(DATALOG_RECORD_TYPE_DATALOG);
+  W25Q_WakeUP();
+  bytesToNextPage = datalog_nextWriteLocation % MEM_PAGE_SIZE;
+  if (bytesToNextPage < DATALOG_DATAPOINT_SIZE) // Crossing page boundary
+  {
+    if (W25Q_ProgramRaw((UINT8 *) &dataPoint, bytesToNextPage, datalog_nextWriteLocation) != W25Q_OK)
+    {
+      W25Q_Sleep();
+      return FALSE;
+    }
+    if (W25Q_ProgramRaw((UINT8 *) (&dataPoint+bytesToNextPage), (DATALOG_DATAPOINT_SIZE-bytesToNextPage), (datalog_nextWriteLocation+bytesToNextPage)) != W25Q_OK)
+    {
+      W25Q_Sleep();
+      return FALSE;
+    }
+    datalog_nextWriteLocation += DATALOG_DATAPOINT_SIZE; //Check next slot
+  }
+  else
+  {
+    if (W25Q_ProgramRaw((UINT8 *) &dataPoint, DATALOG_DATAPOINT_SIZE, datalog_nextWriteLocation) != W25Q_OK)
+    {
+      W25Q_Sleep();
+      return FALSE;
+    }
+    datalog_nextWriteLocation += DATALOG_DATAPOINT_SIZE; //Check next slot
+  }
+  return TRUE;
 }

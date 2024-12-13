@@ -135,6 +135,7 @@ BOOL datalog_ClearMemoryIteration(void);
 BOOL datalog_ClearMemoryBusy(UINT8 *percentDone, BOOL *failure);
 void datalog_GetStorageInfo(UINT32 *bytesUsed, UINT32 *bytesTotal);
 BOOL datalog_CheckFixNextWriteLocationIsBlank(UINT8 recordType);
-void datalog_CreateNewHeader(void);
+BOOL datalog_CreateNewHeader(void);
+BOOL datalog_AddDataPointRecord(T_DATALOG_DATAPOINT dataPoint);
 
 #endif
