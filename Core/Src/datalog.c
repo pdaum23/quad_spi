@@ -448,7 +448,7 @@ BOOL datalog_CreateNewHeader(void)
   return TRUE;
 }
 
-BOOL datalog_AddDataPointRecord(T_DATALOG_DATAPOINT dataPoint)
+BOOL datalog_AddDataPointRecord(T_DATALOG_DATAPOINT *dataPoint)
 {
   UINT16 bytesToNextPage;
   datalog_CheckFixNextWriteLocationIsBlank(DATALOG_RECORD_TYPE_DATALOG);
@@ -466,7 +466,6 @@ BOOL datalog_AddDataPointRecord(T_DATALOG_DATAPOINT dataPoint)
       W25Q_Sleep();
       return FALSE;
     }
-    datalog_nextWriteLocation += DATALOG_DATAPOINT_SIZE; //Check next slot
   }
   else
   {
@@ -475,7 +474,179 @@ BOOL datalog_AddDataPointRecord(T_DATALOG_DATAPOINT dataPoint)
       W25Q_Sleep();
       return FALSE;
     }
-    datalog_nextWriteLocation += DATALOG_DATAPOINT_SIZE; //Check next slot
   }
+  datalog_nextWriteLocation += DATALOG_DATAPOINT_SIZE;
+  W25Q_Sleep();
   return TRUE;
+}
+
+BOOL datalog_AddGpsPointRecord(T_DATALOG_GPSPOINT dataPoint)
+{
+  UINT16 bytesToNextPage;
+  datalog_CheckFixNextWriteLocationIsBlank(DATALOG_RECORD_TYPE_GPSDATA);
+  W25Q_WakeUP();
+  bytesToNextPage = datalog_nextWriteLocation % MEM_PAGE_SIZE;
+  if (bytesToNextPage < DATALOG_GPSPOINT_SIZE) // Crossing page boundary
+  {
+    if (W25Q_ProgramRaw((UINT8 *) &dataPoint, bytesToNextPage, datalog_nextWriteLocation) != W25Q_OK)
+    {
+      W25Q_Sleep();
+      return FALSE;
+    }
+    if (W25Q_ProgramRaw((UINT8 *) (&dataPoint+bytesToNextPage), (DATALOG_GPSPOINT_SIZE-bytesToNextPage), (datalog_nextWriteLocation+bytesToNextPage)) != W25Q_OK)
+    {
+      W25Q_Sleep();
+      return FALSE;
+    }
+  }
+  else
+  {
+    if (W25Q_ProgramRaw((UINT8 *) &dataPoint, DATALOG_GPSPOINT_SIZE, datalog_nextWriteLocation) != W25Q_OK)
+    {
+      W25Q_Sleep();
+      return FALSE;
+    }
+  }
+  datalog_nextWriteLocation += DATALOG_GPSPOINT_SIZE;
+  W25Q_Sleep();
+  return TRUE;
+}
+
+void datalog_QueueNormalSample(UINT64 time, float acValue, float dcValue, BOOL on)
+{ //This is called in an interrupt context
+  if (datalog_bmmqueueCount<DATALOG_BMMQUEUE_SIZE)
+  {
+    datalog_bmmqueue[datalog_bmmqueuePut].type=DATALOG_RECORD_TYPE_DATALOG;
+    datalog_bmmqueue[datalog_bmmqueuePut].timeMilliseconds=time;
+    datalog_bmmqueue[datalog_bmmqueuePut].acValue=(INT32)(acValue*1000);
+    datalog_bmmqueue[datalog_bmmqueuePut].dcValue=(INT32)(dcValue*1000);
+    datalog_bmmqueueOnTag[datalog_bmmqueuePut++]=on;
+    if (datalog_bmmqueuePut>=DATALOG_BMMQUEUE_SIZE) datalog_bmmqueuePut=0;
+    datalog_bmmqueueCount++;
+  }
+  else
+  {
+    datalog_samplesLostCount++;
+    datalog_sampleLost=1;
+  }
+  //printf("Normal, dc=%.3f, ac=%.3f\r\n",dcValue,acValue);
+}
+
+void datalog_QueueFastSample(UINT64 time, float acValue, float dcValue)
+{ //This is called in an interrupt context
+  if (datalog_fastqueueCount<DATALOG_FASTQUEUE_SIZE)
+  {
+    datalog_fastqueue[datalog_fastqueuePut].type=DATALOG_RECORD_TYPE_WAVEFORM;
+    datalog_fastqueue[datalog_fastqueuePut].timeMilliseconds=time;
+    datalog_fastqueue[datalog_fastqueuePut].acValue=(INT32)(acValue*1000);
+    datalog_fastqueue[datalog_fastqueuePut++].dcValue=(INT32)(dcValue*1000);
+    if (datalog_fastqueuePut>=DATALOG_FASTQUEUE_SIZE) datalog_fastqueuePut=0;
+    datalog_fastqueueCount++;
+  }
+  //printf("Fast, dc=%.3f, ac=%.3f\r\n",dcValue,acValue);
+}
+
+void datalog_OutputGPSRecord(void)
+{
+  if (1) // phil test for GPS time valid (Gpsprot_GetGpsType()!=GPS_TYPE_NOGPS)
+  {
+    datalog_gpspoint.type=DATALOG_RECORD_TYPE_GPSDATA;
+    datalog_gpspoint.timeMilliseconds= 0; //timer_GetMillisecondTime();;
+    datalog_gpspoint.latitude=0; //gpsData.latitude;
+    datalog_gpspoint.longitude=0; //gpsData.longitude;
+    datalog_gpspoint.altitude=0; //(UINT16)(gpsData.altitude/100);
+    datalog_gpspoint.satsVisible=0; //(gpsData.satsVisible<gpsData.sats)?gpsData.sats:gpsData.satsVisible;
+    datalog_gpspoint.satsSolution=0; //gpsData.sats;
+    datalog_gpspoint.solutionValid=0; //gpsData.solValid;
+    datalog_gpsRecordOutput=TRUE;
+  }
+}
+
+void datalog_Iteration(void)
+{ //This routine writes out queued samples
+  BOOL sendOneDataPoint;
+  int count;
+  UINT32 lostCount;
+
+  if (datalog_sampleLost)
+  {
+    datalog_sampleLost=0;
+    lostCount=datalog_samplesLostCount;
+    //printf("Data sample lost(%lu)\r\n",lostCount);
+  }
+
+  if (datalog_fastqueueCount||datalog_bmmqueueCount||datalog_gpsRecordOutput)
+  {
+    if (datalog_gpsRecordOutput)
+    {
+      datalog_gpsRecordOutput=FALSE;
+      if (datalog_AddGpsPointRecord(datalog_gpspoint) == TRUE)
+      {
+        //if (datalog_enabledlogging) printf("GPS, timer=%llu, lat=%li, long=%li, alt=%u\r\n",datalog_gpspoint.timeMilliseconds,datalog_gpspoint.latitude, datalog_gpspoint.longitude, datalog_gpspoint.altitude);
+        datalog_datapointCount++;
+      }
+      else
+      {
+        //printf("Write GPS point failed!\r\n");
+      }
+    }
+
+    while (datalog_bmmqueueCount)
+    {
+      if (!datalog_bmmqueueOnTag[datalog_bmmqueueGet]&&datalog_waitForOffSample)
+      {
+        datalog_waitForOffSample=FALSE; //The sample is an off already
+      }
+      if (datalog_waitForOffSample) //Are we waiting still waiting for an off
+      {
+        //printf("Skipping sample write for synchronization.\r\n");
+      }
+      else
+      {
+        if (datalog_AddDataPointRecord((&datalog_bmmqueue[datalog_bmmqueueGet])) == TRUE)
+        {
+
+          if (datalog_bmmqueueGet>=DATALOG_BMMQUEUE_SIZE)
+          {
+            datalog_bmmqueueGet=0;
+          }
+          //if (datalog_enabledlogging)printf("Normal, timer=%llu, dc=%li, ac=%li, on=%u\r\n",datalog_bmmqueue[datalog_bmmqueueGet].timeMilliseconds,datalog_bmmqueue[datalog_bmmqueueGet].dcValue,datalog_bmmqueue[datalog_bmmqueueGet].acValue,datalog_bmmqueueOnTag[datalog_bmmqueueGet]);
+        }
+        else
+        {
+          //printf("Write data point failed!\r\n");
+        }
+        datalog_bmmqueueGet++;
+        if (datalog_bmmqueueGet>=DATALOG_BMMQUEUE_SIZE)
+        {
+          datalog_bmmqueueGet=0;
+        }
+        datalog_bmmqueueCount--;
+        datalog_datapointCount++;
+      }
+    }
+    while (datalog_fastqueueCount)
+    {
+      if (datalog_AddDataPointRecord((&datalog_fastqueue[datalog_fastqueueGet])) == TRUE)
+      {
+
+        if (datalog_fastqueueGet>=DATALOG_FASTQUEUE_SIZE)
+        {
+          datalog_fastqueueGet=0;
+        }
+        //if (datalog_enabledlogging)printf("Normal, timer=%llu, dc=%li, ac=%li, on=%u\r\n",datalog_fastqueue[datalog_fastqueueGet].timeMilliseconds,datalog_fastqueue[datalog_fastqueueGet].dcValue,datalog_fastqueue[datalog_fastqueueGet].acValue,datalog_fastqueueOnTag[datalog_fastqueueGet]);
+      }
+      else
+      {
+        //printf("Write data point failed!\r\n");
+      }
+      datalog_fastqueueGet++;
+      if (datalog_fastqueueGet>=DATALOG_FASTQUEUE_SIZE)
+      {
+        datalog_fastqueueGet=0;
+      }
+      datalog_fastqueueCount--;
+      datalog_datapointCount++;
+    }
+  }
 }

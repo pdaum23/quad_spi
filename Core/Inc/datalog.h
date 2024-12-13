@@ -136,6 +136,12 @@ BOOL datalog_ClearMemoryBusy(UINT8 *percentDone, BOOL *failure);
 void datalog_GetStorageInfo(UINT32 *bytesUsed, UINT32 *bytesTotal);
 BOOL datalog_CheckFixNextWriteLocationIsBlank(UINT8 recordType);
 BOOL datalog_CreateNewHeader(void);
-BOOL datalog_AddDataPointRecord(T_DATALOG_DATAPOINT dataPoint);
+BOOL datalog_AddDataPointRecord(T_DATALOG_DATAPOINT *dataPoint);
+BOOL datalog_AddGpsPointRecord(T_DATALOG_GPSPOINT gpsPoint);
+void datalog_Iteration(void);
+void datalog_QueueNormalSample(UINT64 time, float acValue, float dcValue, BOOL on);
+void datalog_QueueFastSample(UINT64 time, float acValue, float dcValue);
+void datalog_OutputGPSRecord(void);
+void datalog_EnableDebugLogging(BOOL enable);
 
 #endif
